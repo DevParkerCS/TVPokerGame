@@ -1,0 +1,44 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+MemoryCaptures/
+
+# User-specific settings
+UserSettings/
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+
+# Unity cache / backup / local files
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
+
+# JetBrains Rider
+*.sln.iml
+
+# Crash logs
+sysinfo.txt
+
+# Plastic SCM
+.plastic/
+
+# VS Code extension
+.vscode/
+
+# Auto-generated folders you may not want
+GeneratedProjectFiles/
