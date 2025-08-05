@@ -951,7 +951,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 207397720}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1037107736}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: PlayerFold
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &207397720
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2541,6 +2553,7 @@ MonoBehaviour:
   betBtn: {fileID: 1073970634}
   callBtn: {fileID: 1040216195}
   raiseBtn: {fileID: 986438813}
+  avatarLib: {fileID: 0}
 --- !u!4 &1037107737
 Transform:
   m_ObjectHideFlags: 0
@@ -2621,6 +2634,9 @@ MonoBehaviour:
   - {fileID: -1476899455, guid: cda7aa007543daa45abf4c07692c2736, type: 3}
   - {fileID: -1493245872, guid: cda7aa007543daa45abf4c07692c2736, type: 3}
   - {fileID: -476964266, guid: cda7aa007543daa45abf4c07692c2736, type: 3}
+  flopCardsObj: {fileID: 582238851}
+  TurnCardObj: {fileID: 1588316507}
+  riverCardObj: {fileID: 2032565012}
 --- !u!1 &1040216195
 GameObject:
   m_ObjectHideFlags: 0

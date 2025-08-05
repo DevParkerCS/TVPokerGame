@@ -2,6 +2,7 @@ using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class CardManager : MonoBehaviour
@@ -11,13 +12,22 @@ public class CardManager : MonoBehaviour
     public List<Sprite> cardSprites;
     public List<Card> deck;
     public List<Card> gameCards;
+    public List<Card> boardCards;
+    #endregion
+
+    #region Serialized Fields
+    [SerializeField] private GameObject flopCardsObj;
+    [SerializeField] private GameObject TurnCardObj;
+    [SerializeField] private GameObject riverCardObj;
     #endregion
 
     private void Awake()
     {
         gameManager = GetComponent<GameManager>();
+        boardCards = new();
         deck = new();
         CreateDeck();
+        ResetCards();
     }
 
     public IEnumerator DealCards()
@@ -45,10 +55,56 @@ public class CardManager : MonoBehaviour
         Debug.Log($"[{cards[0].rank} {cards[0].suit}], [{cards[1].rank} {cards[1].suit}]");
     }
 
-    public void ResetGameDeck()
+    public void DealFlop()
+    {
+        for (int i = 0; i < flopCardsObj.transform.childCount; i++)
+        {
+            Image flopImg = flopCardsObj.transform.GetChild(i).GetComponent<Image>();
+            Card card = gameCards[^1];
+            gameCards.RemoveAt(gameCards.Count - 1);
+            boardCards.Add(card);
+            flopImg.sprite = card.sprite;
+            flopImg.color = Color.white;
+        }
+    }
+
+    public void DealTurn()
+    {
+        Image turnImg = TurnCardObj.GetComponent<Image>();
+        Card card = gameCards[^1];
+        gameCards.RemoveAt(gameCards.Count - 1);
+        boardCards.Add(card);
+        turnImg.sprite = card.sprite;
+        turnImg.color = Color.white;
+    }
+
+    public void DealRiver()
+    {
+        Image riverImg = riverCardObj.GetComponent<Image>();
+        Card card = gameCards[^1];
+        gameCards.RemoveAt(gameCards.Count - 1);
+        boardCards.Add(card);
+        riverImg.sprite = card.sprite;
+        riverImg.color = Color.white;
+    }
+
+    public void ResetCards()
     {
         gameCards = deck;
         Util.Shuffle(gameCards);
+        for (int i = 0; i < flopCardsObj.transform.childCount; i++)
+        {
+            Image flopImg = flopCardsObj.transform.GetChild(i).GetComponent<Image>();
+            flopImg.sprite = null;
+            flopImg.color = new(0, 0, 0, 0);
+        }
+        Image turnImg = TurnCardObj.GetComponent<Image>();
+        turnImg.sprite = null;
+        turnImg.color = new(0, 0, 0, 0);
+
+        Image riverImg = riverCardObj.GetComponent<Image>();
+        riverImg.sprite = null;
+        riverImg.color = new(0, 0, 0, 0);
     }
 
     private void CreateDeck()

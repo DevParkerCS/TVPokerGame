@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc51352f6a2f0b844b681f30ea0bb84c, type: 3}
+  m_Name: AvatarLibrary
+  m_EditorClassIdentifier: 
+  entries:
+  - id: red_mus
+    sprite: {fileID: 21300000, guid: eb33b05b49b954f4caedddc08ca255cf, type: 3}
+  - id: green_mus
+    sprite: {fileID: 21300000, guid: 9d3976bd76a9e3c44969cbc90af6c33f, type: 3}
+  - id: rain_mus
+    sprite: {fileID: 21300000, guid: 9678e13785aefb743aacd553472f45b4, type: 3}
+  - id: yel_mus
+    sprite: {fileID: 21300000, guid: 39bb389d19a6d7d46b2074740a4ddf86, type: 3}
+  - id: red_goat
+    sprite: {fileID: 21300000, guid: fddf572c998c49746937229a7d510e12, type: 3}
+  - id: rain_goat
+    sprite: {fileID: 21300000, guid: 08227049f02280446a0370c31a7f1bf1, type: 3}
+  - id: green_goat
+    sprite: {fileID: 21300000, guid: 49d4522f114289e4ca566eb2d4aefbc0, type: 3}
+  - id: rain_beard
+    sprite: {fileID: 21300000, guid: 2d386e5f7929531468cc9258ef78dd6b, type: 3}
+  - id: red_beard
+    sprite: {fileID: 21300000, guid: ec5b7971150736f4abee2e940a64c42e, type: 3}
+  - id: green_beard
+    sprite: {fileID: 21300000, guid: 5012a46df25579949bcf05260e703b24, type: 3}
+  - id: rain_blonde
+    sprite: {fileID: 21300000, guid: 7a08b392c9cecb9468285513baa42344, type: 3}
+  - id: red_blonde
+    sprite: {fileID: 21300000, guid: 696608852f6874c4794b620c396a1520, type: 3}
+  - id: green_blonde
+    sprite: {fileID: 21300000, guid: 92f4f4f85619b3b42bfda7212fd2daba, type: 3}

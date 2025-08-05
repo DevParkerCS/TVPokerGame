@@ -17,6 +17,8 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private Image firstCard;
     [SerializeField] private Image secondCard;
     [SerializeField] private GameObject betIndicator;
+    [SerializeField] private AvatarLibrary avatarLib;
+    [SerializeField] private GameObject inactiveIndicator;
     #endregion
 
     private void Awake()
@@ -35,9 +37,10 @@ public class PlayerManager : MonoBehaviour
     #region Public Methods
     public void InitializePlayer()
     {
-        iconImg.sprite = Player.IconSprite;
+        iconImg.sprite = avatarLib.GetSprite(Player.IconCode);
         tmpName.text = Player.PlayerName;
         tmpBalance.text = Player.ChipBalance.ToString();
+        inactiveIndicator.SetActive(false);
     }
 
     public void ToggleButton()
@@ -77,10 +80,17 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    public void ToggleTurn()
+    public void ToggleTurn(bool isActive)
     {
-        IsTurn = !IsTurn;
-        outlineIndicator.SetActive(IsTurn);
+        if(isActive)
+        {
+            IsTurn = true;
+            outlineIndicator.SetActive(true);
+        }else
+        {
+            IsTurn = false;
+            outlineIndicator.SetActive(false);
+        }
     }
 
     public void DisplayBet(int amount, BetManager.BetType type)
@@ -116,14 +126,13 @@ public class PlayerManager : MonoBehaviour
         betIndicator.GetComponent<Image>().color = Color.beige;
     }
 
-    public void Fold()
+    public void DisplayFold()
     {
-
-    }
-
-    public void Check()
-    {
-
+        HideCards();
+        inactiveIndicator.SetActive(true);
+        betText.text = "FOLD";
+        betIndicator.GetComponent<Image>().color = Color.grey;
+        betIndicator.SetActive(true);
     }
 
     public void Raise(int amount)
@@ -131,10 +140,17 @@ public class PlayerManager : MonoBehaviour
 
     }
 
-    public void ResetVisuals()
+    public void ResetForStreet()
     {
         betIndicator.SetActive(false);
         outlineIndicator.SetActive(false);
+    }
+
+    public void ResetAllVisual()
+    {
+        betIndicator.SetActive(false);
+        outlineIndicator.SetActive(false);
+        inactiveIndicator.SetActive(false);
     }
     #endregion
 

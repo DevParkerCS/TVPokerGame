@@ -9,16 +9,17 @@ public class Player
     public List<Card> Cards { get;} = new List<Card>();
     public string PlayerName { get; set; }
     public int TotalBet { get; private set; } = 0;
+    public int CurBet { get; private set; } = 0;
     public bool HasFolded { get; private set; } = false;
     public bool IsTurn { get; set; } = false;
-    public Sprite IconSprite { get; set; }
+    public string IconCode { get; set; }
     #endregion
 
-    public Player(int chipBalance, string playerName, Sprite iconSprite)
+    public Player(int chipBalance, string playerName, string iconCode)
     {
         this.ChipBalance = chipBalance;
         this.PlayerName = playerName;
-        this.IconSprite = iconSprite;
+        this.IconCode = iconCode;
         ID = Guid.NewGuid().ToString();
     }
 
@@ -28,7 +29,7 @@ public class Player
         Cards.Add(card);
     }
 
-    public void FoldCards()
+    public void Fold()
     {
         Cards.Clear();
         HasFolded = true;
@@ -36,14 +37,16 @@ public class Player
 
     public void Bet(int newTotalBet)
     {
-        int toAdd = newTotalBet - TotalBet;
+        int toAdd = newTotalBet - CurBet;
         ChipBalance -= toAdd;
-        TotalBet = newTotalBet;
+        TotalBet += newTotalBet;
+        CurBet += newTotalBet;
     }
 
     public void AllIn()
     {
         TotalBet += ChipBalance;
+        CurBet += ChipBalance;
         ChipBalance = 0;
     }
 
@@ -55,9 +58,16 @@ public class Player
     public void ResetForNewHand()
     {
         TotalBet = 0;
+        CurBet = 0;
         HasFolded = false;
         IsTurn = false;
         Cards.Clear();
+    }
+
+    public void ResetForNewStreet()
+    {
+        CurBet = 0;
+        IsTurn = false;
     }
     #endregion
 }

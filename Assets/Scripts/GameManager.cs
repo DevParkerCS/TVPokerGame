@@ -28,6 +28,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject betBtn;
     [SerializeField] private GameObject callBtn;
     [SerializeField] private GameObject raiseBtn;
+    [SerializeField] private AvatarLibrary avatarLib;
     #endregion
 
     private void Awake()
@@ -43,7 +44,7 @@ public class GameManager : MonoBehaviour
 
         for (int i = 0; i < 10; i++)
         {
-            Player player = new Player(10000, $"John{i}", testSprite);
+            Player player = new Player(10000, $"John{i}", "green_mus");
             PlayersData.Add(player);
         }
 
@@ -53,19 +54,32 @@ public class GameManager : MonoBehaviour
 
     public void PlayerBet(int amount)
     {
-        PlayerManager pm = Players[curToAct];
-        Player player = pm.Player;
+        var pm = Players[curToAct];
+        var player = pm.Player;
+
+        BetManager.ApplyBet(player, amount);          // updates lastBetAmt
+        lastToAct = curToAct;                         // opener becomes closer
+        pm.DisplayBet(amount, BetManager.BetType.Bet);
+
+        MoveToNextPlayer();
+    }
+
+    public void PlayerRaise(int amount)
+    {
+        var pm = Players[curToAct];
+        var player = pm.Player;
 
         BetManager.ApplyBet(player, amount);
-        pm.DisplayBet(amount, BetManager.BetType.Bet);
+        lastToAct = curToAct;
+        pm.DisplayBet(amount, BetManager.BetType.Raise);
 
         MoveToNextPlayer();
     }
 
     public void PlayerCall()
     {
-        PlayerManager pm = Players[curToAct];
-        Player player = pm.Player;
+        var pm = Players[curToAct];
+        var player = pm.Player;
 
         BetManager.ApplyCall(player);
         pm.DisplayBet(BetManager.lastBetAmt, BetManager.BetType.Call);
@@ -73,52 +87,36 @@ public class GameManager : MonoBehaviour
         MoveToNextPlayer();
     }
 
-    public void PlayerRaise(int amount)
-    {
-        PlayerManager pm = Players[curToAct];
-        Player player = pm.Player;
-
-        BetManager.ApplyBet(player, amount);
-        pm.DisplayBet(amount, BetManager.BetType.Raise);
-
-        MoveToNextPlayer();
-    }
-
     public void PlayerCheck()
     {
-        PlayerManager pm = Players[curToAct];
-        pm.DisplayCheck();
-
+        Players[curToAct].DisplayCheck();
         MoveToNextPlayer();
     }
 
+    // TODO: Implement player folding
     public void PlayerFold()
     {
+        var pm = Players[curToAct];
+        var player = pm.Player;
 
+        player.Fold();
+        pm.DisplayFold();
+
+        MoveToNextPlayer();
     }
 
     private void SetActionsForPlayer(Player player)
     {
-        if (BetManager.lastBetAmt == 0)
-        {
-            callBtn.SetActive(false);
-            raiseBtn.SetActive(false);
-            betBtn.SetActive(true);
-            raiseBtn.SetActive(true);
-            checkBtn.SetActive(true);
-        }
-        else
-        {
-            callBtn.SetActive(true);
-            raiseBtn.SetActive(true);
-            betBtn.SetActive(false);
-            raiseBtn.SetActive(true);
+        bool noBetYet = BetManager.lastBetAmt == 0;
+        bool playerIsAllIn = player.ChipBalance == 0;
+        bool playerMatchedBet = player.TotalBet == BetManager.lastBetAmt;
 
-            if (player.TotalBet == BetManager.lastBetAmt)
-                checkBtn.SetActive(true);
-            else
-                checkBtn.SetActive(false);
-        }
+        betBtn.SetActive(noBetYet && !playerIsAllIn);
+        raiseBtn.SetActive(!noBetYet && !playerIsAllIn);
+        callBtn.SetActive(!noBetYet && !playerMatchedBet && !playerIsAllIn);
+        checkBtn.SetActive(noBetYet || playerMatchedBet);
+
+        // You’ll still want a Fold button visible at all times
     }
 
     public void StartGame()
@@ -143,11 +141,12 @@ public class GameManager : MonoBehaviour
         StartCoroutine(StartBlinds());
     }
 
+    // TODO: Fix this
     private void EndRound()
     {
         Players[dealerIndex].ToggleButton();
         dealerIndex = (dealerIndex + 1) % Players.Count;
-        cardManager.ResetGameDeck();
+        cardManager.ResetCards();
         // Display something to notify of next round Maybe shuffle.
 
         StartRound();
@@ -156,29 +155,97 @@ public class GameManager : MonoBehaviour
     private void StartNextStreet()
     {
         curStreet++;
-        curToAct = smallBlindIndex;
+
+        BetManager.ResetForNewStreet();
+
+        foreach (var pm in Players)
+        {
+            pm.ResetForStreet();
+            pm.Player.ResetForNewStreet();
+        }
+
+        switch (curStreet)
+        {
+            case 1: cardManager.DealFlop(); break;
+            case 2: cardManager.DealTurn(); break;
+            case 3: cardManager.DealRiver(); break;
+        }
+
+
+        curToAct = FindNextActivePlayer(smallBlindIndex - 1);
+        if (curToAct == -1 || ActivePlayerCount() == 1)
+        {
+            EndRound();
+            return;
+        }
+
+        lastToAct = curToAct;
+
+        SetActionsForPlayer(Players[curToAct].Player);
+        Players[curToAct].ToggleTurn(true);
+    }
+
+    // Helper: previous active seat counter-clockwise
+    private int FindPrevActivePlayer(int startIndex)
+    {
+        int total = Players.Count;
+        for (int offset = 1; offset < total; offset++)
+        {
+            int idx = (startIndex - offset + total) % total;
+            var p = Players[idx].Player;
+            if (!p.HasFolded && p.ChipBalance > 0)
+                return idx;
+        }
+        return -1;
     }
 
     private void MoveToNextPlayer()
     {
-        Players[curToAct].ToggleTurn();
+        Players[curToAct].ToggleTurn(false);
 
-        if(curToAct != lastToAct)
+        int nextIndex = FindNextActivePlayer(curToAct);
+
+        bool streetComplete = nextIndex == -1 || nextIndex == lastToAct;
+
+        if (streetComplete)
         {
-            curToAct = (curToAct + 1) % Players.Count;
-            SetActionsForPlayer(Players[curToAct].Player);
-            Players[curToAct].ToggleTurn();
-        }else if(curStreet != 3)
-        {
-            for(int i = 0; i < Players.Count; i++)
+            if (curStreet < 3 && ActivePlayerCount() > 1)
             {
-                Players[i].ResetVisuals();
+                StartNextStreet();
             }
-            StartNextStreet();
-        }else
-        {
-            EndRound();
+            else
+            {
+                EndRound();   
+            }
+            return;
         }
+
+        curToAct = nextIndex;
+        SetActionsForPlayer(Players[curToAct].Player);
+        Players[curToAct].ToggleTurn(true);
+    }
+
+    private int FindNextActivePlayer(int startIndex)
+    {
+        int total = Players.Count;
+        for (int offset = 1; offset < total; offset++)
+        {
+            int idx = (startIndex + offset) % total;
+            var p = Players[idx].Player;
+            if (!p.HasFolded && p.ChipBalance > 0)
+                return idx;
+        }
+        return -1;   // everyone else folded or broke
+    }
+
+    // Helper: quick count of players still contesting the pot
+    private int ActivePlayerCount()
+    {
+        int n = 0;
+        foreach (var pm in Players)
+            if (!pm.Player.HasFolded && pm.Player.ChipBalance > 0)
+                n++;
+        return n;
     }
 
     private IEnumerator StartRound()
@@ -187,14 +254,14 @@ public class GameManager : MonoBehaviour
         smallBlindIndex = (dealerIndex + 1) % Players.Count;
         bigBlindIndex = (dealerIndex + 2) % Players.Count;
         curToAct = (dealerIndex + 3) % Players.Count;
-        lastToAct = bigBlindIndex;
+        lastToAct = curToAct;
 
         BetManager.PaySmallBlind(Players[smallBlindIndex].Player);
         BetManager.PayBigBlind(Players[bigBlindIndex].Player);
         Players[smallBlindIndex].DisplayBet(BetManager.GetSmallBlind(), BetManager.BetType.Blind);
         Players[bigBlindIndex].DisplayBet(BetManager.GetBigBlind(), BetManager.BetType.Blind);
 
-        Players[curToAct].ToggleTurn();
+        Players[curToAct].ToggleTurn(true);
 
         SetActionsForPlayer(Players[curToAct].Player);
     }

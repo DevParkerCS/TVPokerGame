@@ -42,3 +42,5 @@ sysinfo.txt
 
 # Auto-generated folders you may not want
 GeneratedProjectFiles/
+
+.vs/

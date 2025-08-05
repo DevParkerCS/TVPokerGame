@@ -36,11 +36,6 @@ public static class BetManager
         player.Bet(lastBetAmt);
     }
 
-    public static void ApplyFold(Player player)
-    {
-        player.FoldCards();
-    }
-
     public static void IncreaseBlind()
     {
         curBlindLevel++;
@@ -52,6 +47,11 @@ public static class BetManager
         {
             
         }
+    }
+
+    public static void ResetForNewStreet()
+    {
+        lastBetAmt = 0;
     }
 
     public static int GetSmallBlind() { return blindLevels[curBlindLevel].SmallBlind; }
