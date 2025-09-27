@@ -14,8 +14,8 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private GameObject button;
     [SerializeField] private Image iconImg;
     [SerializeField] private GameObject outlineIndicator;
-    [SerializeField] private Image firstCard;
-    [SerializeField] private Image secondCard;
+    [SerializeField] private GameObject firstCard;
+    [SerializeField] private GameObject secondCard;
     [SerializeField] private GameObject betIndicator;
     [SerializeField] private AvatarLibrary avatarLib;
     [SerializeField] private GameObject inactiveIndicator;
@@ -56,27 +56,19 @@ public class PlayerManager : MonoBehaviour
 
     public void HideCards()
     {
-        Color FirstColor = firstCard.color;
-        FirstColor.a = 0;
-        firstCard.color = FirstColor;
-        Color SecondColor = secondCard.color;
-        SecondColor.a = 0;
-        secondCard.color = SecondColor;
+        firstCard.SetActive(false);
+        secondCard.SetActive(false);
     }
 
     public void ShowCard(int cardNum)
     {
         if(cardNum == 0)
         {
-            Color FirstColor = firstCard.color;
-            FirstColor.a = 1;
-            firstCard.color = FirstColor;
+            firstCard.SetActive(true);
         }
         else
         {
-            Color SecondColor = secondCard.color;
-            SecondColor.a = 1;
-            secondCard.color = SecondColor;
+            secondCard.SetActive(true);
         }
     }
 
@@ -151,6 +143,7 @@ public class PlayerManager : MonoBehaviour
         betIndicator.SetActive(false);
         outlineIndicator.SetActive(false);
         inactiveIndicator.SetActive(false);
+        HideCards();
     }
     #endregion
 

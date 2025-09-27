@@ -23,6 +23,7 @@ public static class BetManager
     public static void PayBigBlind(Player player)
     {
         player.Bet(blindLevels[curBlindLevel].BigBlind);
+        lastBetAmt = blindLevels[curBlindLevel].BigBlind;
     }
 
     public static void ApplyBet(Player player, int amount)
@@ -49,7 +50,7 @@ public static class BetManager
         }
     }
 
-    public static void ResetForNewStreet()
+    public static void ResetBets()
     {
         lastBetAmt = 0;
     }

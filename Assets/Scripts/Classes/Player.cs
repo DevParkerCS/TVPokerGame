@@ -39,8 +39,8 @@ public class Player
     {
         int toAdd = newTotalBet - CurBet;
         ChipBalance -= toAdd;
-        TotalBet += newTotalBet;
-        CurBet += newTotalBet;
+        TotalBet += toAdd;
+        CurBet += toAdd;
     }
 
     public void AllIn()

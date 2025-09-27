@@ -17,24 +17,26 @@ public class Pot
         {
             contributions.Add(player.ID, amount);
         }
+        Debug.Log($"Adding {amount} to pot");
         TotalAmt += amount;
     }
 
-    public Dictionary<string, int> PayoutWinners(List<List<Player>> winners)
+    public Dictionary<string, int> PayoutWinners(SortedDictionary<int, List<PlayerManager>> winners)
     {
         Dictionary<string, int> payouts = new();
         Dictionary<string, int> contributionsCpy = new(contributions);
+        Debug.Log($"Total Contributions: {TotalAmt}");
 
-        foreach (List<Player> originalGroup in winners)
+        foreach (var entry in winners)
         {
             // Create a working copy of the current tied group
-            List<Player> tiedGroup = new(originalGroup);
+            List<PlayerManager> tiedGroup = new(entry.Value);
 
             // Pay them out in layers based on their minimum contribution
             while (tiedGroup.Count > 0 && contributionsCpy.Values.Any(v => v > 0))
             {
                 // Get the lowest remaining contribution from players in the group
-                int minEligible = tiedGroup.Min(p => contributionsCpy.ContainsKey(p.ID) ? contributionsCpy[p.ID] : 0);
+                int minEligible = tiedGroup.Min(p => contributionsCpy.ContainsKey(p.Player.ID) ? contributionsCpy[p.Player.ID] : 0);
                 if (minEligible == 0) break;
 
                 int sidePot = 0;
@@ -54,22 +56,24 @@ public class Pot
 
                 foreach (var player in tiedGroup)
                 {
-                    PayoutPlayer(player, share, payouts);
+                    Debug.Log($"Player : {player.Player.PlayerName} Earned : {share}");
+                    PayoutPlayer(player.Player, share, payouts);
                 }
 
                 for (int i = 0; i < leftover; i++)
                 {
                     var player = tiedGroup[i];
-                    PayoutPlayer(player, 1, payouts);
+                    PayoutPlayer(player.Player, 1, payouts);
                 }
 
                 // Remove players who have now received all they are eligible for
                 tiedGroup = tiedGroup
-                    .Where(p => contributionsCpy.ContainsKey(p.ID) && contributionsCpy[p.ID] > 0)
+                    .Where(p => contributionsCpy.ContainsKey(p.Player.ID) && contributionsCpy[p.Player.ID] > 0)
                     .ToList();
             }
         }
 
+        TotalAmt = 0;
         return payouts;
     }
 

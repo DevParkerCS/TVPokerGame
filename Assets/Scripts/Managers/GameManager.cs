@@ -10,7 +10,6 @@ public class GameManager : MonoBehaviour
     public int dealerIndex;
     private CardManager cardManager;
     public List<PlayerManager> Players;
-    private Pot pot;
     public int roundMinutes = 5;
     private List<Player> PlayersData;
     private int smallBlindIndex = 0;
@@ -29,6 +28,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject callBtn;
     [SerializeField] private GameObject raiseBtn;
     [SerializeField] private AvatarLibrary avatarLib;
+    [SerializeField] private PotManager potManager;
+    [SerializeField] private ShowdownManager showdownManager;
     #endregion
 
     private void Awake()
@@ -47,15 +48,12 @@ public class GameManager : MonoBehaviour
             Player player = new Player(10000, $"John{i}", "green_mus");
             PlayersData.Add(player);
         }
-
-        pot = new();
-
     }
 
     public void PlayerBet(int amount)
     {
-        var pm = Players[curToAct];
-        var player = pm.Player;
+        PlayerManager pm = Players[curToAct];
+        Player player = pm.Player;
 
         BetManager.ApplyBet(player, amount);          // updates lastBetAmt
         lastToAct = curToAct;                         // opener becomes closer
@@ -96,11 +94,14 @@ public class GameManager : MonoBehaviour
     // TODO: Implement player folding
     public void PlayerFold()
     {
-        var pm = Players[curToAct];
-        var player = pm.Player;
+        PlayerManager pm = Players[curToAct];
+        Player player = pm.Player;
 
         player.Fold();
         pm.DisplayFold();
+
+        if (player.TotalBet > 0)
+            potManager.AddBetToPot(pm);
 
         MoveToNextPlayer();
     }
@@ -110,6 +111,7 @@ public class GameManager : MonoBehaviour
         bool noBetYet = BetManager.lastBetAmt == 0;
         bool playerIsAllIn = player.ChipBalance == 0;
         bool playerMatchedBet = player.TotalBet == BetManager.lastBetAmt;
+        Debug.Log($"No Bet {noBetYet}, All In {playerIsAllIn}, Matched Bet {playerMatchedBet}");
 
         betBtn.SetActive(noBetYet && !playerIsAllIn);
         raiseBtn.SetActive(!noBetYet && !playerIsAllIn);
@@ -144,19 +146,34 @@ public class GameManager : MonoBehaviour
     // TODO: Fix this
     private void EndRound()
     {
+        potManager.AddAllBetsToPot(Players);
+        SortedDictionary<int, List<PlayerManager>> winners = showdownManager.HandleShowdown(Players, cardManager);
+        Dictionary<string, int> payouts = potManager.GetWinnersPayout(winners);
+
+        DisplayPayouts(winners, payouts);
+
         Players[dealerIndex].ToggleButton();
         dealerIndex = (dealerIndex + 1) % Players.Count;
+        Players[dealerIndex].ToggleButton();
         cardManager.ResetCards();
+        BetManager.ResetBets();
         // Display something to notify of next round Maybe shuffle.
+       
+        for(int i = 0; i < Players.Count; i++)
+        {
+            Players[i].ResetAllVisual();
+            Players[i].Player.ResetForNewHand();
+        }
 
-        StartRound();
+        StartCoroutine(StartRound());
     }
 
     private void StartNextStreet()
     {
         curStreet++;
+        potManager.AddAllBetsToPot(Players);
 
-        BetManager.ResetForNewStreet();
+        BetManager.ResetBets();
 
         foreach (var pm in Players)
         {
@@ -183,20 +200,6 @@ public class GameManager : MonoBehaviour
 
         SetActionsForPlayer(Players[curToAct].Player);
         Players[curToAct].ToggleTurn(true);
-    }
-
-    // Helper: previous active seat counter-clockwise
-    private int FindPrevActivePlayer(int startIndex)
-    {
-        int total = Players.Count;
-        for (int offset = 1; offset < total; offset++)
-        {
-            int idx = (startIndex - offset + total) % total;
-            var p = Players[idx].Player;
-            if (!p.HasFolded && p.ChipBalance > 0)
-                return idx;
-        }
-        return -1;
     }
 
     private void MoveToNextPlayer()
@@ -250,6 +253,7 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator StartRound()
     {
+        curStreet = 0;
         yield return StartCoroutine(cardManager.DealCards());
         smallBlindIndex = (dealerIndex + 1) % Players.Count;
         bigBlindIndex = (dealerIndex + 2) % Players.Count;
@@ -273,6 +277,17 @@ public class GameManager : MonoBehaviour
         {
             yield return new WaitForSeconds(roundMinutes * 60f);
             BetManager.IncreaseBlind();
+        }
+    }
+
+    private void DisplayPayouts(SortedDictionary<int, List<PlayerManager>> winners, Dictionary<string, int> payouts)
+    {
+        foreach (var entry in winners)
+        {
+            foreach (PlayerManager pm in entry.Value)
+            {
+                pm.UpdatePlayerBalance();
+            }
         }
     }
 }

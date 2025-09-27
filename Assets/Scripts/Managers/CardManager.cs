@@ -1,9 +1,9 @@
 using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class CardManager : MonoBehaviour
 {
@@ -90,7 +90,10 @@ public class CardManager : MonoBehaviour
 
     public void ResetCards()
     {
-        gameCards = deck;
+        Debug.Log($"Deck Count: {deck.Count}, Cards Count: {gameCards.Count}");
+        gameCards = deck.ToList<Card>(); 
+        Debug.Log($"After Deck Count: {deck.Count}, Cards Count: {gameCards.Count}");
+
         Util.Shuffle(gameCards);
         for (int i = 0; i < flopCardsObj.transform.childCount; i++)
         {
@@ -120,7 +123,7 @@ public class CardManager : MonoBehaviour
             }
         }
 
-        gameCards = deck;
+        gameCards = deck.ToList<Card>();
         Util.Shuffle(gameCards);
     }
 }
