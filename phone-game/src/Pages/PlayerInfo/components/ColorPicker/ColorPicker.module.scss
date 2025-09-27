@@ -1,0 +1,73 @@
+.contentWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.flexWrapper {
+  margin-top: 1rem;
+}
+
+.colorInfoWrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.flexWrapper {
+  flex: 1;
+}
+
+.colorTitle {
+  color: white;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.pickerBox,
+.previewBox {
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+}
+
+.pickerBox :global(.react-colorful) {
+  width: 100%;
+  height: 100%;
+}
+
+/* Center the avatar and keep it inside the box */
+.previewBox {
+  border: 1px solid var(--gold-btn-mid);
+  border-radius: 12px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.previewBox img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  display: block;
+}
+
+.inputWrapper {
+  display: flex;
+  flex-direction: column;
+  margin-top: 2rem;
+  width: 100%;
+
+  .inputLabel {
+    margin-bottom: 0.25rem;
+    font-size: 1.15rem;
+    color: white;
+  }
+
+  .nameInput {
+    font-size: 1.2rem;
+    padding: 0.45rem;
+    border-radius: 15px;
+    font-weight: bold;
+  }
+}

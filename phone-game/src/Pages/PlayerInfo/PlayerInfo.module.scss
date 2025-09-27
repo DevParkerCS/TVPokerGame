@@ -1,0 +1,60 @@
+* {
+  box-sizing: border-box;
+}
+
+.contentWrapper {
+  background-color: var(--green-surface);
+  border: 3px solid var(--gold-btn-mid);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 20px inset var(--shadow-900);
+  overflow: hidden;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 90dvh;
+  width: 90dvw;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.txtWrapper {
+  width: 100%;
+  color: white;
+  text-align: center;
+  border-bottom: 2px solid var(--green-deep);
+  padding-bottom: 1rem;
+}
+
+.btnsWrapper {
+  display: flex;
+}
+
+.continueBtn {
+  font-size: 1.5rem;
+  text-align: center;
+  padding: 0.5rem 1.5rem;
+  border-radius: 5px;
+  border: 1px solid var(--gold-btn-mid);
+  background-color: var(--green-surface-2);
+  color: var(--gold-brand);
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: auto;
+  width: 100%;
+}
+
+.chooseAvatarWrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* take the leftover space between header and footer */
+  min-height: 0; /* IMPORTANT: allow it to shrink in a flex parent */
+  margin-bottom: 0.5rem;
+}
+
+.avatarTitle {
+  text-align: center;
+  color: white;
+  margin: 0.5rem 0;
+}

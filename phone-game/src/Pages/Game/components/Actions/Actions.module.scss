@@ -1,0 +1,17 @@
+.actionsWrapper {
+  display: flex;
+  margin-top: 1.25rem;
+
+  .actionBtn {
+    width: 105px;
+    font-size: 1.25rem;
+    text-align: center;
+    margin: 0.15rem;
+    padding: 0.25rem 1rem;
+    border-radius: 5px;
+    border: 1px solid var(--gold-btn-mid);
+    background-color: var(--green-surface-2);
+    color: var(--gold-brand);
+    font-weight: bold;
+  }
+}
