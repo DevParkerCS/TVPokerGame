@@ -1,5 +1,5 @@
 import type { Namespace } from "socket.io";
-import { DealPlayerCardsPayload, GameState } from "../Types/Types";
+import { DealPlayerCardsPayload, GameState, PhoneTurnStatePayload } from "../Types/Types";
 import { CreateNewGame } from "../Game/Factory";
 import { games } from "../State/GameState";
 import { nanoid } from "nanoid";
@@ -55,6 +55,28 @@ export function registerTV(ns: Namespace) {
           cards: payload.cards,
         });
 
+        ack?.({ ok: true, data: { delivered: true } });
+      } catch (e) {
+        ack?.({ ok: false, error: String(e) });
+      }
+    });
+
+    socket.on("phone-turn-state", (payload: PhoneTurnStatePayload, ack) => {
+      try {
+        const roomId = cleanRoomId(payload.roomId || socket.data.roomId || "");
+        const game = games.get(roomId);
+
+        if (!game) {
+          ack?.({ ok: false, error: "Room not found" });
+          return;
+        }
+
+        if (!payload.playerId || !game.players[payload.playerId]) {
+          ack?.({ ok: false, error: "Player not found in room" });
+          return;
+        }
+
+        ns.server.of("/phone").to(payload.playerId).emit("turn-state", payload);
         ack?.({ ok: true, data: { delivered: true } });
       } catch (e) {
         ack?.({ ok: false, error: String(e) });
