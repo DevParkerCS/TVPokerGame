@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./Game.module.scss";
 import { Actions } from "./components/Actions/Actions";
 import { CardPayload, useSocket } from "../../Context/SocketContext";
@@ -95,6 +95,31 @@ export const Game = () => {
   const [cardsShown, setCardsShown] = useState(false);
   const [status, setStatus] = useState("");
   const { gameState, roomId, socket, holeCards, turnState } = useSocket();
+
+  useEffect(() => {
+    const onHandReset = (payload?: { message?: string }) => {
+      setCardsShown(false);
+      setStatus(payload?.message || "Waiting for new hand");
+    };
+    const onHandStarted = (payload?: { message?: string }) => {
+      setCardsShown(false);
+      setStatus(payload?.message || "New hand started");
+    };
+
+    socket.on("hand-reset", onHandReset);
+    socket.on("hand-started", onHandStarted);
+
+    return () => {
+      socket.off("hand-reset", onHandReset);
+      socket.off("hand-started", onHandStarted);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (holeCards.length > 0) {
+      setStatus("");
+    }
+  }, [holeCards.length]);
 
   const handleAction = async (action: PlayerActionType, amount?: number) => {
     if (!isAllowedAction(action, turnState)) {
