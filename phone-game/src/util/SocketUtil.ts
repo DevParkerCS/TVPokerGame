@@ -1,7 +1,7 @@
 import { Socket } from "socket.io-client";
-import { PlayerInfo } from "../Pages/PlayerInfo/PlayerInfo";
-import { Ack, EmitMap, PlayerActionType } from "../types/Types";
-import { GameStateType } from "../Context/SocketContext";
+import type { PlayerInfo } from "../Pages/PlayerInfo/PlayerInfo";
+import type { Ack, EmitMap, PlayerActionType } from "../types/Types";
+import type { GameStateType } from "../Context/SocketContext";
 
 /**
  * Fully-typed safe emitter with a real timeout.
