@@ -1,4 +1,4 @@
-import { createContext, useContext, PropsWithChildren, useMemo, useState } from "react";
+import { createContext, useContext, PropsWithChildren, useEffect, useMemo, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
 export type SocketContextType = {
@@ -50,9 +50,14 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
     canPlayerRaise: false,
   });
 
-  socket.on("connect", () => {
-    console.log("Connected");
-  });
+  useEffect(() => {
+    const onConnect = () => console.log("Connected");
+    socket.on("connect", onConnect);
+
+    return () => {
+      socket.off("connect", onConnect);
+    };
+  }, [socket]);
 
   const value: SocketContextType = { gameState, roomId, socket, setGameState, setRoomId };
 
