@@ -78,10 +78,15 @@ public class PhoneTurnStateReporter : MonoBehaviour
         foreach (PlayerManager pm in gameManager.Players)
         {
             Player player = pm.Player;
-            int amountToCall = Math.Max(0, BetManager.lastBetAmt - player.CurBet);
             bool isTurn = player.ID == current.Player.ID;
             bool noBetYet = BetManager.lastBetAmt == 0;
             bool playerIsAllIn = player.ChipBalance == 0;
+            int maxTotalBet = player.CurBet + player.ChipBalance;
+            int rawAmountToCall = Math.Max(0, BetManager.lastBetAmt - player.CurBet);
+            int amountToCall = Math.Min(rawAmountToCall, player.ChipBalance);
+            int minRaiseTo = noBetYet ? bigBlind : BetManager.lastBetAmt + bigBlind;
+            bool callWouldPutPlayerAllIn = rawAmountToCall >= player.ChipBalance;
+            bool hasChipsForMinRaise = maxTotalBet >= minRaiseTo;
 
             socketManager.SendTurnStateToPhone(new PhoneTurnStatePayload
             {
@@ -94,12 +99,12 @@ public class PhoneTurnStateReporter : MonoBehaviour
                 currentBet = BetManager.lastBetAmt,
                 playerBet = player.CurBet,
                 amountToCall = amountToCall,
-                minRaiseTo = noBetYet ? bigBlind : BetManager.lastBetAmt + bigBlind,
+                minRaiseTo = minRaiseTo,
                 canFold = isTurn && !player.HasFolded,
-                canCheck = isTurn && amountToCall == 0,
-                canCall = isTurn && amountToCall > 0 && !playerIsAllIn,
-                canBet = isTurn && noBetYet && !playerIsAllIn,
-                canRaise = isTurn && !noBetYet && !playerIsAllIn
+                canCheck = isTurn && rawAmountToCall == 0,
+                canCall = isTurn && rawAmountToCall > 0 && !playerIsAllIn,
+                canBet = isTurn && noBetYet && !playerIsAllIn && player.ChipBalance >= minRaiseTo,
+                canRaise = isTurn && !noBetYet && !playerIsAllIn && !callWouldPutPlayerAllIn && hasChipsForMinRaise
             });
         }
     }
