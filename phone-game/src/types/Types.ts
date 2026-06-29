@@ -1,5 +1,5 @@
-import { GameStateType } from "../Context/SocketContext";
-import { PlayerInfo } from "../Pages/PlayerInfo/PlayerInfo";
+import type { GameStateType } from "../Context/SocketContext";
+import type { PlayerInfo } from "../Pages/PlayerInfo/PlayerInfo";
 
 /** Generic ack envelope shared by client & server */
 export type Ack<TData, TErr = string> =
