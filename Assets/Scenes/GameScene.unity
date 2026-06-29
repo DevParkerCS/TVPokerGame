@@ -259,6 +259,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -329,6 +330,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29b754bef66ae6144835c7a1d979a37a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  servLauncher: {fileID: 0}
+  gameManager: {fileID: 0}
   roomId: 
   isConnected: 0
   errConnecting: 0
@@ -442,6 +445,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -1321,6 +1325,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2234,6 +2239,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2571,6 +2577,7 @@ GameObject:
   - component: {fileID: 1037107738}
   - component: {fileID: 1037107739}
   - component: {fileID: 1037107740}
+  - component: {fileID: 1037107741}
   m_Layer: 0
   m_Name: GameManagers
   m_TagString: Untagged
@@ -2614,6 +2621,7 @@ MonoBehaviour:
   avatarLib: {fileID: 11400000, guid: 08479a35512321f47b0b2a526d64bc5a, type: 2}
   potManager: {fileID: 527071932}
   showdownManager: {fileID: 1037107740}
+  useTestPlayers: 0
 --- !u!4 &1037107737
 Transform:
   m_ObjectHideFlags: 0
@@ -2724,6 +2732,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 975f9338e5c7aaf4ba26c5f6bc07d59c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1037107741
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1037107735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ade7cd41da439994d9b5a951c2b41842, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalServerLauncher
+  port: 5757
 --- !u!1 &1040216195
 GameObject:
   m_ObjectHideFlags: 0
@@ -3412,6 +3433,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -3902,6 +3924,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -4038,6 +4061,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -5093,6 +5117,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
