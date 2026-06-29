@@ -1,6 +1,11 @@
 import { Namespace } from "socket.io";
 import { games } from "../State/GameState";
-import { JoinTablePayload, PhoneGameState, PlayerJoinedPayload } from "../Types/Types";
+import {
+  JoinTablePayload,
+  PhoneGameState,
+  PlayerActionPayload,
+  PlayerJoinedPayload,
+} from "../Types/Types";
 
 const STARTING_BALANCE = 10000;
 
@@ -61,6 +66,34 @@ export function registerPhone(ns: Namespace) {
         };
 
         ack({ ok: true, data: phoneGameState });
+      } catch (e) {
+        ack({ ok: false, error: String(e) });
+      }
+    });
+
+    socket.on("player-action", (payload: PlayerActionPayload, ack) => {
+      try {
+        const roomId = cleanRoomId(payload.roomId || socket.data.roomId);
+        const playerId = payload.playerId || socket.data.playerId;
+        const game = games.get(roomId);
+
+        if (!game) {
+          ack({ ok: false, error: "Room not found" });
+          return;
+        }
+
+        if (!playerId || !game.players[playerId]) {
+          ack({ ok: false, error: "Player not found in room" });
+          return;
+        }
+
+        ns.server.of("/tv").to(roomId).emit("player-action", {
+          playerId,
+          action: payload.action,
+          amount: payload.amount || 0,
+        });
+
+        ack({ ok: true, data: { accepted: true } });
       } catch (e) {
         ack({ ok: false, error: String(e) });
       }
