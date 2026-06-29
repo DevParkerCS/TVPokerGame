@@ -62,6 +62,16 @@ public class DealPlayerCardsPayload
 }
 
 [Serializable]
+public class PhoneHandLifecyclePayload
+{
+    public string roomId;
+    public string eventName;
+    public string eventValue;
+    public int handId;
+    public string message;
+}
+
+[Serializable]
 public class PhoneTurnStatePayload
 {
     public string roomId;
@@ -217,6 +227,30 @@ public class SocketManager : MonoBehaviour
         catch (Exception ex)
         {
             Debug.LogError($"Failed to send hole cards to phone: {ex.Message}");
+        }
+    }
+
+    public async void SendHandLifecycleToPhones(string eventName, int handId, string message)
+    {
+        if (socket == null || !isConnected || string.IsNullOrEmpty(roomId) || string.IsNullOrEmpty(eventName))
+            return;
+
+        PhoneHandLifecyclePayload payload = new PhoneHandLifecyclePayload
+        {
+            roomId = roomId,
+            eventName = eventName,
+            eventValue = eventName,
+            handId = handId,
+            message = message
+        };
+
+        try
+        {
+            await socket.EmitAsync("phone-hand-lifecycle", payload);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to send hand lifecycle to phone: {ex.Message}");
         }
     }
 
