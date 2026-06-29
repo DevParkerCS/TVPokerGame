@@ -145,7 +145,7 @@ export const Game = () => {
         <p className={styles.balanceTxt}>${gameState.balance.toLocaleString()}</p>
       </div>
 
-      <Actions onAction={handleAction} />
+      <Actions onAction={handleAction} turnState={turnState} />
       {status && <p>{status}</p>}
     </div>
   );
