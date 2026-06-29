@@ -45,6 +45,22 @@ public class RemotePlayerActionPayload
     public int amount;
 }
 
+[Serializable]
+public class CardPayload
+{
+    public string rank;
+    public string suit;
+    public string code;
+}
+
+[Serializable]
+public class DealPlayerCardsPayload
+{
+    public string roomId;
+    public string playerId;
+    public List<CardPayload> cards;
+}
+
 public class SocketManager : MonoBehaviour
 {
     private SocketIOUnity socket;
@@ -157,6 +173,66 @@ public class SocketManager : MonoBehaviour
         }catch (Exception ex)
         {
             Debug.LogError("Failed to create room: " + ex.Message);
+        }
+    }
+
+    public async void SendHoleCardsToPhone(string playerId, List<Card> cards)
+    {
+        if (socket == null || !isConnected || string.IsNullOrEmpty(roomId) || string.IsNullOrEmpty(playerId))
+            return;
+
+        DealPlayerCardsPayload payload = new DealPlayerCardsPayload
+        {
+            roomId = roomId,
+            playerId = playerId,
+            cards = cards.Select(ToPayload).ToList()
+        };
+
+        try
+        {
+            await socket.EmitAsync("deal-player-cards", payload);
+            Debug.Log($"Sent hole cards to {playerId}");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to send hole cards to phone: {ex.Message}");
+        }
+    }
+
+    private CardPayload ToPayload(Card card)
+    {
+        string rank = RankCode(card.rank);
+        string suit = SuitCode(card.suit);
+        return new CardPayload
+        {
+            rank = rank,
+            suit = suit,
+            code = $"{rank}{suit}"
+        };
+    }
+
+    private string RankCode(Card.Rank rank)
+    {
+        switch (rank)
+        {
+            case Card.Rank.Ace: return "A";
+            case Card.Rank.King: return "K";
+            case Card.Rank.Queen: return "Q";
+            case Card.Rank.Jack: return "J";
+            case Card.Rank.Ten: return "T";
+            default: return ((int)rank).ToString();
+        }
+    }
+
+    private string SuitCode(Card.Suit suit)
+    {
+        switch (suit)
+        {
+            case Card.Suit.Clubs: return "C";
+            case Card.Suit.Diamonds: return "D";
+            case Card.Suit.Hearts: return "H";
+            case Card.Suit.Spades: return "S";
+            default: return "?";
         }
     }
 
