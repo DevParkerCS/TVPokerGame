@@ -61,6 +61,27 @@ public class DealPlayerCardsPayload
     public List<CardPayload> cards;
 }
 
+[Serializable]
+public class PhoneTurnStatePayload
+{
+    public string roomId;
+    public string playerId;
+    public bool isPlayerTurn;
+    public string currentPlayerId;
+    public string currentPlayerName;
+    public int balance;
+    public int pot;
+    public int currentBet;
+    public int playerBet;
+    public int amountToCall;
+    public int minRaiseTo;
+    public bool canFold;
+    public bool canCheck;
+    public bool canCall;
+    public bool canBet;
+    public bool canRaise;
+}
+
 public class SocketManager : MonoBehaviour
 {
     private SocketIOUnity socket;
@@ -196,6 +217,23 @@ public class SocketManager : MonoBehaviour
         catch (Exception ex)
         {
             Debug.LogError($"Failed to send hole cards to phone: {ex.Message}");
+        }
+    }
+
+    public async void SendTurnStateToPhone(PhoneTurnStatePayload payload)
+    {
+        if (socket == null || !isConnected || string.IsNullOrEmpty(roomId) || string.IsNullOrEmpty(payload.playerId))
+            return;
+
+        payload.roomId = roomId;
+
+        try
+        {
+            await socket.EmitAsync("phone-turn-state", payload);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to send turn state to phone: {ex.Message}");
         }
     }
 
