@@ -96,15 +96,40 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
         canPlayerRaise: payload.canRaise,
       }));
     };
+    const onHandReset = () => {
+      console.log("Received hand-reset");
+      setHoleCards([]);
+      setTurnState(null);
+      setGameState((prev) => ({
+        ...prev,
+        lastBet: 0,
+        isPlayerTurn: false,
+        canPlayerRaise: false,
+      }));
+    };
+    const onHandStarted = () => {
+      console.log("Received hand-started");
+      setTurnState(null);
+      setGameState((prev) => ({
+        ...prev,
+        lastBet: 0,
+        isPlayerTurn: false,
+        canPlayerRaise: false,
+      }));
+    };
 
     socket.on("connect", onConnect);
     socket.on("hole-cards", onHoleCards);
     socket.on("turn-state", onTurnState);
+    socket.on("hand-reset", onHandReset);
+    socket.on("hand-started", onHandStarted);
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("hole-cards", onHoleCards);
       socket.off("turn-state", onTurnState);
+      socket.off("hand-reset", onHandReset);
+      socket.off("hand-started", onHandStarted);
     };
   }, [socket]);
 
