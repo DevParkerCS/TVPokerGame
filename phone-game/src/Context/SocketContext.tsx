@@ -7,6 +7,24 @@ export type CardPayload = {
   code: string;
 };
 
+export type TurnStateType = {
+  playerId: string;
+  isPlayerTurn: boolean;
+  currentPlayerId: string;
+  currentPlayerName: string;
+  balance: number;
+  pot: number;
+  currentBet: number;
+  playerBet: number;
+  amountToCall: number;
+  minRaiseTo: number;
+  canFold: boolean;
+  canCheck: boolean;
+  canCall: boolean;
+  canBet: boolean;
+  canRaise: boolean;
+};
+
 export type SocketContextType = {
   gameState: GameStateType;
   setGameState: React.Dispatch<React.SetStateAction<GameStateType>>;
@@ -14,6 +32,7 @@ export type SocketContextType = {
   setRoomId: React.Dispatch<React.SetStateAction<string>>;
   holeCards: CardPayload[];
   setHoleCards: React.Dispatch<React.SetStateAction<CardPayload[]>>;
+  turnState: TurnStateType | null;
   socket: Socket;
 };
 
@@ -50,6 +69,7 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
 
   const [roomId, setRoomId] = useState("");
   const [holeCards, setHoleCards] = useState<CardPayload[]>([]);
+  const [turnState, setTurnState] = useState<TurnStateType | null>(null);
   const [gameState, setGameState] = useState<GameStateType>({
     playerId: "",
     balance: 0,
@@ -65,13 +85,26 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
       console.log("Received hole-cards", payload.cards);
       setHoleCards(payload.cards ?? []);
     };
+    const onTurnState = (payload: TurnStateType) => {
+      console.log("Received turn-state", payload);
+      setTurnState(payload);
+      setGameState((prev) => ({
+        ...prev,
+        balance: payload.balance,
+        lastBet: payload.currentBet,
+        isPlayerTurn: payload.isPlayerTurn,
+        canPlayerRaise: payload.canRaise,
+      }));
+    };
 
     socket.on("connect", onConnect);
     socket.on("hole-cards", onHoleCards);
+    socket.on("turn-state", onTurnState);
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("hole-cards", onHoleCards);
+      socket.off("turn-state", onTurnState);
     };
   }, [socket]);
 
@@ -79,6 +112,7 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
     gameState,
     roomId,
     holeCards,
+    turnState,
     socket,
     setGameState,
     setRoomId,
