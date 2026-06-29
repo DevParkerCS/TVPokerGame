@@ -1,5 +1,4 @@
 import type { Namespace } from "socket.io";
-import { v4 } from "uuid";
 import { GameState } from "../Types/Types";
 import { CreateNewGame } from "../Game/Factory";
 import { games } from "../State/GameState";
@@ -13,11 +12,15 @@ export function registerTV(ns: Namespace) {
         let roomId = "";
         do {
           // Continue creating room ids till new one is created
-          roomId = nanoid(6);
+          roomId = nanoid(6).toUpperCase();
         } while (games.has(roomId));
+
         const game: GameState = CreateNewGame();
         games.set(roomId, game);
+
         socket.join(roomId);
+        socket.data.roomId = roomId;
+
         ack({ ok: true, roomId });
       } catch (e) {
         ack({ ok: false, error: String(e) });
