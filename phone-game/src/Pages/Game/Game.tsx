@@ -1,15 +1,39 @@
 import React, { useState } from "react";
 import styles from "./Game.module.scss";
-import card from "../../assets/AC.png";
 import { Actions } from "./components/Actions/Actions";
-import { useSocket } from "../../Context/SocketContext";
+import { CardPayload, useSocket } from "../../Context/SocketContext";
 import { SendPlayerAction } from "../../util/SocketUtil";
 import { PlayerActionType } from "../../types/Types";
+
+const cardImageContext = require.context("../../assets", false, /\.png$/);
+const cardImages: Record<string, string> = cardImageContext.keys().reduce(
+  (acc: Record<string, string>, key: string) => {
+    const code = key.replace("./", "").replace(/\.[^/.]+$/, "").toUpperCase();
+    acc[code] = cardImageContext(key) as string;
+    return acc;
+  },
+  {}
+);
+
+const CardView = ({ card }: { card: CardPayload }) => {
+  const code = card.code.toUpperCase();
+  const image = cardImages[code];
+
+  return (
+    <div className={styles.cardWrapper}>
+      {image ? (
+        <img className={styles.cardImg} src={image} alt={code} />
+      ) : (
+        <div className={styles.cardFallback}>{code}</div>
+      )}
+    </div>
+  );
+};
 
 export const Game = () => {
   const [cardsShown, setCardsShown] = useState(false);
   const [status, setStatus] = useState("");
-  const { gameState, roomId, socket } = useSocket();
+  const { gameState, roomId, socket, holeCards } = useSocket();
 
   const handleAction = async (action: PlayerActionType, amount?: number) => {
     try {
@@ -27,15 +51,10 @@ export const Game = () => {
 
       <div className={styles.cardsTray}>
         <div className={styles.cardsWrapper}>
-          {cardsShown && (
-            <>
-              <div className={styles.cardWrapper}>
-                <img className={styles.cardImg} src={card} alt="card one" />
-              </div>
-              <div className={styles.cardWrapper}>
-                <img className={styles.cardImg} src={card} alt="card two" />
-              </div>
-            </>
+          {cardsShown && holeCards.length > 0 &&
+            holeCards.map((card) => <CardView key={card.code} card={card} />)}
+          {cardsShown && holeCards.length === 0 && (
+            <p className={styles.waitingTxt}>Cards have not been dealt yet.</p>
           )}
         </div>
 
