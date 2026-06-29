@@ -13,5 +13,11 @@
     background-color: var(--green-surface-2);
     color: var(--gold-brand);
     font-weight: bold;
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
   }
 }
