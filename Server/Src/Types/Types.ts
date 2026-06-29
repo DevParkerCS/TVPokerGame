@@ -55,6 +55,15 @@ export type HoleCardsPayload = {
   cards: CardPayload[];
 };
 
+export type PhoneHandLifecycleEvent = "hand-reset" | "hand-started";
+
+export type PhoneHandLifecyclePayload = {
+  roomId: string;
+  event: PhoneHandLifecycleEvent;
+  handId: number;
+  message?: string;
+};
+
 export type PhoneTurnStatePayload = {
   roomId: string;
   playerId: string;
