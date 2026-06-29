@@ -17,7 +17,9 @@ public class GameManager : MonoBehaviour
     private int curToAct = 0;
     private int lastToAct = 0;
     private int curStreet = 0;
+    private int handId = 0;
     private bool isGameStarted = false;
+    private bool isEndingRound = false;
     #endregion
     #region Serialized Fields
     [SerializeField] public List<PlayerManager> PlayerSeats;
@@ -28,6 +30,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private ShowdownManager showdownManager;
     [SerializeField] private SocketManager socketManager;
     [SerializeField] private bool useTestPlayers = false;
+    [SerializeField] private float handEndDelaySeconds = 5f;
     #endregion
 
     private void Awake()
@@ -81,7 +84,7 @@ public class GameManager : MonoBehaviour
 
     public void HandleRemotePlayerAction(string playerId, string action, int amount)
     {
-        if (!isGameStarted || Players.Count == 0 || curToAct < 0 || curToAct >= Players.Count)
+        if (!isGameStarted || isEndingRound || Players.Count == 0 || curToAct < 0 || curToAct >= Players.Count)
             return;
 
         PlayerManager current = Players[curToAct];
@@ -186,6 +189,11 @@ public class GameManager : MonoBehaviour
 
     private void EndRound()
     {
+        if (isEndingRound)
+            return;
+
+        isEndingRound = true;
+        ClearTurnIndicators();
         potManager.AddAllBetsToPot(Players);
 
         List<PlayerManager> remainingPlayers = Players
@@ -204,8 +212,55 @@ public class GameManager : MonoBehaviour
 
         Dictionary<string, int> payouts = potManager.GetWinnersPayout(winners);
         DisplayPayouts(winners, payouts);
+        SendHandEndedToPhones(payouts);
+        StartCoroutine(ResetAndStartNextHandAfterDelay());
+    }
+
+    private IEnumerator ResetAndStartNextHandAfterDelay()
+    {
+        yield return new WaitForSeconds(handEndDelaySeconds);
         ResetForNextHand();
+        isEndingRound = false;
         StartCoroutine(StartRound());
+    }
+
+    private void ClearTurnIndicators()
+    {
+        foreach (PlayerManager pm in Players)
+        {
+            pm.ToggleTurn(false);
+        }
+    }
+
+    private void SendHandEndedToPhones(Dictionary<string, int> payouts)
+    {
+        if (socketManager == null)
+            return;
+
+        socketManager.SendHandLifecycleToPhones("hand-ended", handId, BuildHandEndedMessage(payouts));
+    }
+
+    private string BuildHandEndedMessage(Dictionary<string, int> payouts)
+    {
+        List<string> winnerSummaries = new();
+
+        foreach (var payout in payouts)
+        {
+            if (payout.Value <= 0)
+                continue;
+
+            PlayerManager winner = Players.FirstOrDefault(pm => pm.Player.ID == payout.Key);
+            string winnerName = winner != null ? winner.Player.PlayerName : payout.Key;
+            winnerSummaries.Add($"{winnerName} won ${payout.Value}");
+        }
+
+        if (winnerSummaries.Count == 0)
+            return "Hand complete";
+
+        if (winnerSummaries.Count == 1)
+            return $"Hand complete — {winnerSummaries[0]}";
+
+        return $"Hand complete — {string.Join(", ", winnerSummaries)}";
     }
 
     private void ResetForNextHand()
@@ -326,6 +381,7 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator StartRound()
     {
+        handId++;
         curStreet = 0;
         yield return StartCoroutine(cardManager.DealCards());
         SendHoleCardsToPhones();
