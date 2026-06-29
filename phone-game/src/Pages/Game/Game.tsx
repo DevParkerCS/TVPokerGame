@@ -81,14 +81,31 @@ const CardView = ({ card }: { card: CardPayload }) => {
   );
 };
 
+function isAllowedAction(action: PlayerActionType, turnState: ReturnType<typeof useSocket>["turnState"]) {
+  if (!turnState?.isPlayerTurn) return false;
+  if (action === "fold") return turnState.canFold;
+  if (action === "check") return turnState.canCheck;
+  if (action === "call") return turnState.canCall;
+  if (action === "bet") return turnState.canBet;
+  if (action === "raise") return turnState.canRaise;
+  return false;
+}
+
 export const Game = () => {
   const [cardsShown, setCardsShown] = useState(false);
   const [status, setStatus] = useState("");
-  const { gameState, roomId, socket, holeCards } = useSocket();
+  const { gameState, roomId, socket, holeCards, turnState } = useSocket();
 
   const handleAction = async (action: PlayerActionType, amount?: number) => {
+    if (!isAllowedAction(action, turnState)) {
+      setStatus(turnState?.currentPlayerName ? `Waiting for ${turnState.currentPlayerName}` : "Waiting for turn state");
+      return;
+    }
+
+    const actionAmount = action === "raise" ? turnState?.minRaiseTo ?? amount : amount;
+
     try {
-      await SendPlayerAction(roomId, gameState.playerId, action, amount, socket);
+      await SendPlayerAction(roomId, gameState.playerId, action, actionAmount, socket);
       setStatus(`${action.toUpperCase()} sent`);
     } catch (e) {
       setStatus("Could not send action");
@@ -99,6 +116,12 @@ export const Game = () => {
     <div className={styles.gameWrapper}>
       <h1 className={styles.title}>TV Poker</h1>
       <p>Room: {roomId}</p>
+      <p>{turnState?.isPlayerTurn ? "Your turn" : turnState?.currentPlayerName ? `Waiting for ${turnState.currentPlayerName}` : "Waiting for game state"}</p>
+      {turnState && (
+        <p>
+          Pot: ${turnState.pot} | To call: ${turnState.amountToCall}
+        </p>
+      )}
 
       <div className={styles.cardsTray}>
         <div className={styles.cardsWrapper}>
