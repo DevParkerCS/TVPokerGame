@@ -15,8 +15,8 @@ export function registerTV(ns: Namespace) {
           // Continue creating room ids till new one is created
           roomId = nanoid(6);
         } while (games.has(roomId));
-        const Game: GameState = CreateNewGame();
-
+        const game: GameState = CreateNewGame();
+        games.set(roomId, game);
         socket.join(roomId);
         ack({ ok: true, roomId });
       } catch (e) {

@@ -21,7 +21,6 @@ public enum ConnectionStatus
 public class SocketManager : MonoBehaviour
 {
     private SocketIOUnity socket;
-    [SerializeField] private LocalServerLauncher servLauncher;
     public string roomId = string.Empty;
     public bool isConnected = false;
     public bool errConnecting = false;
@@ -32,19 +31,9 @@ public class SocketManager : MonoBehaviour
         await TryCreateRoom();
     }
 
-    string GetLocalIPv4()
-    {
-        return Dns.GetHostEntry(Dns.GetHostName())
-                  .AddressList
-                  .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)?
-                  .ToString();
-    }
-
     private async Task Connect()
     {
-        var ip = GetLocalIPv4();
-        Debug.Log($"{ip}");
-        var uri = new Uri($"http://{ip}:{servLauncher.port}/tv");
+        var uri = new Uri($"http://localhost:5757/tv");
         isConnected = false;
         errConnecting = false;
 

@@ -1,3 +1,3 @@
-import { GameStates } from "../Types/Types";
+import { GameState, GameStates } from "../Types/Types";
 
-export const games: GameStates = new Map();
+export const games: GameStates = new Map<string, GameState>();
