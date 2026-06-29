@@ -39,6 +39,22 @@ export type PlayerActionPayload = {
   amount?: number;
 };
 
+export type CardPayload = {
+  rank: string;
+  suit: string;
+  code: string;
+};
+
+export type DealPlayerCardsPayload = {
+  roomId: string;
+  playerId: string;
+  cards: CardPayload[];
+};
+
+export type HoleCardsPayload = {
+  cards: CardPayload[];
+};
+
 export type PhoneGameState = {
   playerId: string;
   balance: number;

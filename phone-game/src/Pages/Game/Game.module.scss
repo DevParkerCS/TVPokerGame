@@ -74,7 +74,10 @@ html {
   display: flex;
   gap: 8px;
   justify-content: center;
+  align-items: center;
+  min-height: 132px;
   width: fit-content;
+  min-width: 200px;
   padding: 0.75rem 1rem;
   border: 4px solid #033719;
   box-shadow: 0 0 5px black;
@@ -87,6 +90,25 @@ html {
   .cardImg {
     width: 80px;
   }
+}
+
+.cardFallback {
+  width: 80px;
+  height: 112px;
+  border-radius: 10px;
+  background: var(--card-face);
+  color: var(--pip-dark);
+  display: grid;
+  place-items: center;
+  font-size: 1.75rem;
+  font-weight: bold;
+  border: 2px solid var(--gold-btn-mid);
+}
+
+.waitingTxt {
+  color: var(--gold-brand);
+  text-align: center;
+  max-width: 180px;
 }
 
 .showBtn {
