@@ -102,7 +102,7 @@ export const Game = () => {
       return;
     }
 
-    const actionAmount = action === "raise" ? turnState?.minRaiseTo ?? amount : amount;
+    const actionAmount = action === "bet" || action === "raise" ? amount ?? turnState?.minRaiseTo : amount;
 
     try {
       await SendPlayerAction(roomId, gameState.playerId, action, actionAmount, socket);
