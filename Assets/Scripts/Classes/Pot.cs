@@ -9,7 +9,9 @@ public class Pot
     public int TotalAmt { get; private set; } = 0;
     private Dictionary<string, int> contributions = new();
 
-    public void AddContribution(Player player, int amount) { 
+    public void AddContribution(Player player, int amount) {
+        if (amount <= 0) return;
+
         if(contributions.ContainsKey(player.ID))
         {
             contributions[player.ID] += amount;
@@ -73,7 +75,7 @@ public class Pot
             }
         }
 
-        TotalAmt = 0;
+        Reset();
         return payouts;
     }
 
@@ -90,11 +92,9 @@ public class Pot
             payouts[player.ID] = amount;
     }
 
-
-
-
     public void Reset()
     {
         TotalAmt = 0;
+        contributions.Clear();
     }
 }
