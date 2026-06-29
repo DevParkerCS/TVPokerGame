@@ -1,6 +1,6 @@
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 import { PlayerInfo } from "../Pages/PlayerInfo/PlayerInfo";
-import { Ack, EmitMap } from "../types/Types";
+import { Ack, EmitMap, PlayerActionType } from "../types/Types";
 import { GameStateType } from "../Context/SocketContext";
 
 /**
@@ -26,9 +26,6 @@ export function emitSafe<Evt extends keyof EmitMap>(
       );
     }, timeoutMs);
 
-    // If you don't want offline buffering, you can guard with:
-    // if (!socket.connected) return reject(new Error("Socket not connected"));
-
     socket.emit(
       event,
       data,
@@ -46,17 +43,29 @@ export function emitSafe<Evt extends keyof EmitMap>(
     );
   });
 }
-export const JoinRoom = async (playerInfo: PlayerInfo, socket: Socket) => {
-  try {
-    const res: GameStateType = await emitSafe(
-      "join-table",
-      { tableId: 1 },
-      undefined,
-      socket
-    );
 
-    return res;
-  } catch (e) {
-    console.log("Error: " + e);
-  }
+export const JoinRoom = async (playerInfo: PlayerInfo, socket: Socket) => {
+  const res: GameStateType = await emitSafe(
+    "join-table",
+    playerInfo,
+    5000,
+    socket
+  );
+
+  return res;
+};
+
+export const SendPlayerAction = async (
+  roomId: string,
+  playerId: string,
+  action: PlayerActionType,
+  amount: number | undefined,
+  socket: Socket
+) => {
+  return emitSafe(
+    "player-action",
+    { roomId, playerId, action, amount },
+    5000,
+    socket
+  );
 };
