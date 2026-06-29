@@ -23,11 +23,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] public List<PlayerManager> PlayerSeats;
     [SerializeField] private Button startGameBtn;
     [SerializeField] private Sprite testSprite;
-    [SerializeField] private GameObject foldBtn;
-    [SerializeField] private GameObject checkBtn;
-    [SerializeField] private GameObject betBtn;
-    [SerializeField] private GameObject callBtn;
-    [SerializeField] private GameObject raiseBtn;
     [SerializeField] private AvatarLibrary avatarLib;
     [SerializeField] private PotManager potManager;
     [SerializeField] private ShowdownManager showdownManager;
@@ -161,19 +156,6 @@ public class GameManager : MonoBehaviour
         MoveToNextPlayer();
     }
 
-    private void SetActionsForPlayer(Player player)
-    {
-        bool noBetYet = BetManager.lastBetAmt == 0;
-        bool playerIsAllIn = player.ChipBalance == 0;
-        bool playerMatchedBet = player.TotalBet == BetManager.lastBetAmt;
-        Debug.Log($"No Bet {noBetYet}, All In {playerIsAllIn}, Matched Bet {playerMatchedBet}");
-
-        betBtn.SetActive(noBetYet && !playerIsAllIn);
-        raiseBtn.SetActive(!noBetYet && !playerIsAllIn);
-        callBtn.SetActive(!noBetYet && !playerMatchedBet && !playerIsAllIn);
-        checkBtn.SetActive(noBetYet || playerMatchedBet);
-    }
-
     public void StartGame()
     {
         if (PlayersData.Count < 2)
@@ -273,8 +255,6 @@ public class GameManager : MonoBehaviour
         }
 
         lastToAct = curToAct;
-
-        SetActionsForPlayer(Players[curToAct].Player);
         Players[curToAct].ToggleTurn(true);
     }
 
@@ -319,7 +299,6 @@ public class GameManager : MonoBehaviour
         }
 
         curToAct = nextIndex;
-        SetActionsForPlayer(Players[curToAct].Player);
         Players[curToAct].ToggleTurn(true);
     }
 
@@ -361,7 +340,6 @@ public class GameManager : MonoBehaviour
         Players[bigBlindIndex].DisplayBet(BetManager.GetBigBlind(), BetManager.BetType.Blind);
 
         Players[curToAct].ToggleTurn(true);
-        SetActionsForPlayer(Players[curToAct].Player);
     }
 
     private void SendHoleCardsToPhones()
