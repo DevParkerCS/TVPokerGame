@@ -60,8 +60,9 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
   });
 
   useEffect(() => {
-    const onConnect = () => console.log("Connected");
+    const onConnect = () => console.log("Connected", socket.id);
     const onHoleCards = (payload: { cards: CardPayload[] }) => {
+      console.log("Received hole-cards", payload.cards);
       setHoleCards(payload.cards ?? []);
     };
 
