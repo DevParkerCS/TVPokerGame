@@ -1,8 +1,12 @@
 import type { Namespace } from "socket.io";
-import { GameState } from "../Types/Types";
+import { DealPlayerCardsPayload, GameState } from "../Types/Types";
 import { CreateNewGame } from "../Game/Factory";
 import { games } from "../State/GameState";
 import { nanoid } from "nanoid";
+
+function cleanRoomId(roomId: string): string {
+  return roomId.trim().toUpperCase();
+}
 
 // Tv Socket Events
 export function registerTV(ns: Namespace) {
@@ -24,6 +28,36 @@ export function registerTV(ns: Namespace) {
         ack({ ok: true, roomId });
       } catch (e) {
         ack({ ok: false, error: String(e) });
+      }
+    });
+
+    socket.on("deal-player-cards", (payload: DealPlayerCardsPayload, ack) => {
+      try {
+        const roomId = cleanRoomId(payload.roomId || socket.data.roomId || "");
+        const game = games.get(roomId);
+
+        if (!game) {
+          ack?.({ ok: false, error: "Room not found" });
+          return;
+        }
+
+        if (!payload.playerId || !game.players[payload.playerId]) {
+          ack?.({ ok: false, error: "Player not found in room" });
+          return;
+        }
+
+        game.players[payload.playerId].cards = payload.cards.map((card) => ({
+          rank: card.rank as any,
+          suit: card.suit.toLowerCase() as any,
+        }));
+
+        ns.server.of("/phone").to(payload.playerId).emit("hole-cards", {
+          cards: payload.cards,
+        });
+
+        ack?.({ ok: true, data: { delivered: true } });
+      } catch (e) {
+        ack?.({ ok: false, error: String(e) });
       }
     });
   });
