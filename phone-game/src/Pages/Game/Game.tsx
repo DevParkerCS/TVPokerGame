@@ -11,104 +11,48 @@ const cardImageContext = require.context(
   /\.(png|jpe?g|webp)$/
 );
 
-const suitAliases: Record<string, string> = {
-  c: "C",
-  club: "C",
-  clubs: "C",
-  d: "D",
-  diamond: "D",
-  diamonds: "D",
-  h: "H",
-  heart: "H",
-  hearts: "H",
-  s: "S",
-  spade: "S",
-  spades: "S",
-};
+const indexedRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"];
+const suits = ["C", "D", "H", "S"];
 
-const rankAliases: Record<string, string> = {
-  a: "A",
-  ace: "A",
-  "1": "A",
-  "01": "A",
-  k: "K",
-  king: "K",
-  "13": "K",
-  q: "Q",
-  queen: "Q",
-  "12": "Q",
-  j: "J",
-  jack: "J",
-  "11": "J",
-  t: "T",
-  ten: "T",
-  "10": "T",
-  "2": "2",
-  "02": "2",
-  two: "2",
-  "3": "3",
-  "03": "3",
-  three: "3",
-  "4": "4",
-  "04": "4",
-  four: "4",
-  "5": "5",
-  "05": "5",
-  five: "5",
-  "6": "6",
-  "06": "6",
-  six: "6",
-  "7": "7",
-  "07": "7",
-  seven: "7",
-  "8": "8",
-  "08": "8",
-  eight: "8",
-  "9": "9",
-  "09": "9",
-  nine: "9",
-};
+function codeFromIndexedAsset(path: string) {
+  const withoutExtension = path.replace(/^\.\//, "").replace(/\.[^/.]+$/, "");
+  const parts = withoutExtension.split("/");
+  const fileName = parts[parts.length - 1];
+  const folderName = parts.length > 1 ? parts[parts.length - 2].toUpperCase() : "";
 
-function normalizeToken(value: string) {
-  return value.toLowerCase().trim();
+  const fileWithSuit = fileName.match(/^(\d\d)_([CDHS])$/i);
+  if (fileWithSuit) {
+    const rank = indexedRanks[Number(fileWithSuit[1])];
+    const suit = fileWithSuit[2].toUpperCase();
+    return rank && suits.includes(suit) ? `${rank}${suit}` : undefined;
+  }
+
+  const fileInSuitFolder = fileName.match(/^(\d\d)$/);
+  if (fileInSuitFolder) {
+    const rank = indexedRanks[Number(fileInSuitFolder[1])];
+    return rank && suits.includes(folderName) ? `${rank}${folderName}` : undefined;
+  }
+
+  return undefined;
 }
 
-function normalizeRank(value: string) {
-  return rankAliases[normalizeToken(value)];
-}
+function codeFromCompactName(path: string) {
+  const withoutExtension = path.replace(/^\.\//, "").replace(/\.[^/.]+$/, "");
+  const fileName = withoutExtension.split("/").pop() ?? "";
+  const compact = fileName.replace(/[^a-z0-9]/gi, "").toUpperCase();
 
-function normalizeSuit(value: string) {
-  return suitAliases[normalizeToken(value)];
-}
-
-function compactCodeFromText(value: string) {
-  const compact = value.replace(/[^a-z0-9]/gi, "").toUpperCase();
-  const rankFirst = compact.match(/^(A|K|Q|J|T|10|[2-9])(C|D|H|S)$/);
-  if (rankFirst) return `${rankFirst[1]}${rankFirst[2]}`;
-
-  const suitFirst = compact.match(/^(C|D|H|S)(A|K|Q|J|T|10|[2-9])$/);
-  if (suitFirst) return `${suitFirst[2]}${suitFirst[1]}`;
+  if (compact.length === 2) {
+    const first = compact[0];
+    const second = compact[1];
+    if (suits.includes(second)) return `${first}${second}`;
+    if (suits.includes(first)) return `${second}${first}`;
+  }
 
   return undefined;
 }
 
 function codeFromAssetPath(path: string) {
-  const withoutExtension = path.replace(/^\.\//, "").replace(/\.[^/.]+$/, "");
-  const pathParts = withoutExtension.split("/");
-  const basename = pathParts[pathParts.length - 1];
-
-  const directCode = compactCodeFromText(basename) ?? compactCodeFromText(withoutExtension);
-  if (directCode) return directCode;
-
-  const tokens = withoutExtension
-    .split(/[^a-z0-9]+/i)
-    .map(normalizeToken)
-    .filter(Boolean);
-
-  const rank = tokens.map(normalizeRank).find(Boolean);
-  const suit = tokens.map(normalizeSuit).find(Boolean);
-
-  return rank && suit ? `${rank}${suit}` : undefined;
+  return codeFromIndexedAsset(path) ?? codeFromCompactName(path);
 }
 
 const cardImages: Record<string, string> = cardImageContext.keys().reduce(
