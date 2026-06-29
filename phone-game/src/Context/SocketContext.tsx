@@ -96,6 +96,15 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
         canPlayerRaise: payload.canRaise,
       }));
     };
+    const onHandEnded = () => {
+      console.log("Received hand-ended");
+      setTurnState(null);
+      setGameState((prev) => ({
+        ...prev,
+        isPlayerTurn: false,
+        canPlayerRaise: false,
+      }));
+    };
     const onHandReset = () => {
       console.log("Received hand-reset");
       setHoleCards([]);
@@ -121,6 +130,7 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
     socket.on("connect", onConnect);
     socket.on("hole-cards", onHoleCards);
     socket.on("turn-state", onTurnState);
+    socket.on("hand-ended", onHandEnded);
     socket.on("hand-reset", onHandReset);
     socket.on("hand-started", onHandStarted);
 
@@ -128,6 +138,7 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
       socket.off("connect", onConnect);
       socket.off("hole-cards", onHoleCards);
       socket.off("turn-state", onTurnState);
+      socket.off("hand-ended", onHandEnded);
       socket.off("hand-reset", onHandReset);
       socket.off("hand-started", onHandStarted);
     };
