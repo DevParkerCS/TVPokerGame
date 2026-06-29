@@ -49,34 +49,35 @@ export const Actions = ({ onAction, turnState }: ActionsProps) => {
         </button>
       </div>
 
-      <div className={styles.amountActions}>
-        <label className={styles.amountLabel}>{amountLabel}</label>
-        <div className={styles.amountControls}>
-          <button className={styles.amountBtn} disabled={!canChooseAmount} onClick={() => updateAmount(actionAmount - stepAmount)}>
-            -
-          </button>
-          <input
-            className={styles.amountInput}
-            type="number"
-            min={minAmount}
-            max={maxAmount}
-            step={stepAmount}
-            disabled={!canChooseAmount}
-            value={actionAmount}
-            onChange={(e) => updateAmount(Number(e.target.value))}
-          />
-          <button className={styles.amountBtn} disabled={!canChooseAmount} onClick={() => updateAmount(actionAmount + stepAmount)}>
-            +
+      {canChooseAmount && (
+        <div className={styles.amountActions}>
+          <label className={styles.amountLabel}>{amountLabel}</label>
+          <div className={styles.amountControls}>
+            <button className={styles.amountBtn} onClick={() => updateAmount(actionAmount - stepAmount)}>
+              -
+            </button>
+            <input
+              className={styles.amountInput}
+              type="number"
+              min={minAmount}
+              max={maxAmount}
+              step={stepAmount}
+              value={actionAmount}
+              onChange={(e) => updateAmount(Number(e.target.value))}
+            />
+            <button className={styles.amountBtn} onClick={() => updateAmount(actionAmount + stepAmount)}>
+              +
+            </button>
+          </div>
+          <button
+            className={styles.actionBtn}
+            disabled={actionAmount < minAmount}
+            onClick={() => onAction(amountAction, actionAmount)}
+          >
+            {amountLabel} ${actionAmount}
           </button>
         </div>
-        <button
-          className={styles.actionBtn}
-          disabled={!canChooseAmount || actionAmount < minAmount}
-          onClick={() => onAction(amountAction, actionAmount)}
-        >
-          {amountLabel} ${actionAmount}
-        </button>
-      </div>
+      )}
     </div>
   );
 };
