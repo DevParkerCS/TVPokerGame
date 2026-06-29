@@ -13,6 +13,8 @@ function cleanRoomId(roomId: string): string {
   return roomId.trim().toUpperCase();
 }
 
+const lifecycleEvents = new Set(["hand-reset", "hand-started", "hand-ended"]);
+
 // Tv Socket Events
 export function registerTV(ns: Namespace) {
   ns.on("connection", (socket) => {
@@ -77,7 +79,7 @@ export function registerTV(ns: Namespace) {
           return;
         }
 
-        if (event !== "hand-reset" && event !== "hand-started") {
+        if (!event || !lifecycleEvents.has(event)) {
           ack?.({ ok: false, error: "Unknown hand lifecycle event" });
           return;
         }
