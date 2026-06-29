@@ -1,5 +1,10 @@
 import type { Namespace } from "socket.io";
-import { DealPlayerCardsPayload, GameState, PhoneTurnStatePayload } from "../Types/Types";
+import {
+  DealPlayerCardsPayload,
+  GameState,
+  PhoneHandLifecyclePayload,
+  PhoneTurnStatePayload,
+} from "../Types/Types";
 import { CreateNewGame } from "../Game/Factory";
 import { games } from "../State/GameState";
 import { nanoid } from "nanoid";
@@ -53,6 +58,32 @@ export function registerTV(ns: Namespace) {
 
         ns.server.of("/phone").to(payload.playerId).emit("hole-cards", {
           cards: payload.cards,
+        });
+
+        ack?.({ ok: true, data: { delivered: true } });
+      } catch (e) {
+        ack?.({ ok: false, error: String(e) });
+      }
+    });
+
+    socket.on("phone-hand-lifecycle", (payload: PhoneHandLifecyclePayload, ack) => {
+      try {
+        const roomId = cleanRoomId(payload.roomId || socket.data.roomId || "");
+        const game = games.get(roomId);
+
+        if (!game) {
+          ack?.({ ok: false, error: "Room not found" });
+          return;
+        }
+
+        if (payload.event !== "hand-reset" && payload.event !== "hand-started") {
+          ack?.({ ok: false, error: "Unknown hand lifecycle event" });
+          return;
+        }
+
+        ns.server.of("/phone").to(roomId).emit(payload.event, {
+          handId: payload.handId,
+          message: payload.message || "",
         });
 
         ack?.({ ok: true, data: { delivered: true } });
