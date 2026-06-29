@@ -11,6 +11,47 @@ export type GameState = {
   lastBetAmt: number;
 };
 
+// ** Socket Payloads ** //
+export type ColorState = {
+  r: number;
+  g: number;
+  b: number;
+};
+
+export type JoinTablePayload = {
+  roomId: string;
+  name: string;
+  spriteCode: string;
+  color: ColorState;
+};
+
+export type PlayerJoinedPayload = JoinTablePayload & {
+  playerId: string;
+  balance: number;
+};
+
+export type PlayerActionType = "fold" | "check" | "call" | "bet" | "raise";
+
+export type PlayerActionPayload = {
+  roomId: string;
+  playerId: string;
+  action: PlayerActionType;
+  amount?: number;
+};
+
+export type PhoneGameState = {
+  playerId: string;
+  balance: number;
+  lastBet: number;
+  isPlayerTurn: boolean;
+  curBB: number;
+  canPlayerRaise: boolean;
+};
+
+export type Ack<TData, TErr = string> =
+  | { ok: true; data: TData }
+  | { ok: false; error: TErr };
+
 // ** Board State ** //
 export type BoardState = {
   flopCards: Card[];
@@ -72,6 +113,7 @@ export type PlayerState = {
   name: string;
   socketId: string;
   spriteCode: string;
+  color?: ColorState;
   cards: Card[];
   balance: number;
   totalBet: number;
