@@ -91,7 +91,8 @@ public class CardManager : MonoBehaviour
     public void ResetCards()
     {
         Debug.Log($"Deck Count: {deck.Count}, Cards Count: {gameCards.Count}");
-        gameCards = deck.ToList<Card>(); 
+        gameCards = deck.ToList<Card>();
+        boardCards.Clear();
         Debug.Log($"After Deck Count: {deck.Count}, Cards Count: {gameCards.Count}");
 
         Util.Shuffle(gameCards);
