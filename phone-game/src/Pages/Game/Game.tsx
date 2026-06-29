@@ -97,6 +97,9 @@ export const Game = () => {
   const { gameState, roomId, socket, holeCards, turnState } = useSocket();
 
   useEffect(() => {
+    const onHandEnded = (payload?: { message?: string }) => {
+      setStatus(payload?.message || "Hand complete");
+    };
     const onHandReset = (payload?: { message?: string }) => {
       setCardsShown(false);
       setStatus(payload?.message || "Waiting for new hand");
@@ -106,10 +109,12 @@ export const Game = () => {
       setStatus(payload?.message || "New hand started");
     };
 
+    socket.on("hand-ended", onHandEnded);
     socket.on("hand-reset", onHandReset);
     socket.on("hand-started", onHandStarted);
 
     return () => {
+      socket.off("hand-ended", onHandEnded);
       socket.off("hand-reset", onHandReset);
       socket.off("hand-started", onHandStarted);
     };
