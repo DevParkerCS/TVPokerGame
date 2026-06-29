@@ -16,7 +16,7 @@ function cleanRoomId(roomId: string): string {
 // phone.ts
 export function registerPhone(ns: Namespace) {
   ns.on("connection", (socket) => {
-    console.log("Phone Connected");
+    console.log("Phone Connected", socket.id);
 
     socket.on("join-table", (payload: JoinTablePayload, ack) => {
       try {
@@ -51,8 +51,11 @@ export function registerPhone(ns: Namespace) {
         };
 
         socket.join(roomId);
+        socket.join(playerId);
         socket.data.roomId = roomId;
         socket.data.playerId = playerId;
+
+        console.log(`Phone ${playerId} joined room ${roomId}`);
 
         ns.server.of("/tv").to(roomId).emit("player-joined", playerJoined);
 
