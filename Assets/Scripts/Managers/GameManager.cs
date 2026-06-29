@@ -31,12 +31,16 @@ public class GameManager : MonoBehaviour
     [SerializeField] private AvatarLibrary avatarLib;
     [SerializeField] private PotManager potManager;
     [SerializeField] private ShowdownManager showdownManager;
+    [SerializeField] private SocketManager socketManager;
     [SerializeField] private bool useTestPlayers = false;
     #endregion
 
     private void Awake()
     {
         cardManager = GetComponent<CardManager>();
+        if (socketManager == null)
+            socketManager = FindObjectOfType<SocketManager>();
+
         PlayersData = new();
         Players = new(PlayerSeats.Count);
 
@@ -345,6 +349,7 @@ public class GameManager : MonoBehaviour
     {
         curStreet = 0;
         yield return StartCoroutine(cardManager.DealCards());
+        SendHoleCardsToPhones();
         smallBlindIndex = (dealerIndex + 1) % Players.Count;
         bigBlindIndex = (dealerIndex + 2) % Players.Count;
         curToAct = (dealerIndex + 3) % Players.Count;
@@ -357,6 +362,20 @@ public class GameManager : MonoBehaviour
 
         Players[curToAct].ToggleTurn(true);
         SetActionsForPlayer(Players[curToAct].Player);
+    }
+
+    private void SendHoleCardsToPhones()
+    {
+        if (socketManager == null)
+            return;
+
+        foreach (PlayerManager pm in Players)
+        {
+            if (pm.Player.Cards.Count == 2)
+            {
+                socketManager.SendHoleCardsToPhone(pm.Player.ID, pm.Player.Cards.ToList());
+            }
+        }
     }
 
     private IEnumerator StartBlinds()
