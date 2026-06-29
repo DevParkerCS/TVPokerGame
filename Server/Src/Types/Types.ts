@@ -55,6 +55,25 @@ export type HoleCardsPayload = {
   cards: CardPayload[];
 };
 
+export type PhoneTurnStatePayload = {
+  roomId: string;
+  playerId: string;
+  isPlayerTurn: boolean;
+  currentPlayerId: string;
+  currentPlayerName: string;
+  balance: number;
+  pot: number;
+  currentBet: number;
+  playerBet: number;
+  amountToCall: number;
+  minRaiseTo: number;
+  canFold: boolean;
+  canCheck: boolean;
+  canCall: boolean;
+  canBet: boolean;
+  canRaise: boolean;
+};
+
 export type PhoneGameState = {
   playerId: string;
   balance: number;
