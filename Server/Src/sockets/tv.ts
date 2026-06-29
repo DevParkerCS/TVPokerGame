@@ -66,22 +66,23 @@ export function registerTV(ns: Namespace) {
       }
     });
 
-    socket.on("phone-hand-lifecycle", (payload: PhoneHandLifecyclePayload, ack) => {
+    socket.on("phone-hand-lifecycle", (payload: PhoneHandLifecyclePayload & { eventName?: string; eventValue?: string }, ack) => {
       try {
         const roomId = cleanRoomId(payload.roomId || socket.data.roomId || "");
         const game = games.get(roomId);
+        const event = payload.event || payload.eventName || payload.eventValue;
 
         if (!game) {
           ack?.({ ok: false, error: "Room not found" });
           return;
         }
 
-        if (payload.event !== "hand-reset" && payload.event !== "hand-started") {
+        if (event !== "hand-reset" && event !== "hand-started") {
           ack?.({ ok: false, error: "Unknown hand lifecycle event" });
           return;
         }
 
-        ns.server.of("/phone").to(roomId).emit(payload.event, {
+        ns.server.of("/phone").to(roomId).emit(event, {
           handId: payload.handId,
           message: payload.message || "",
         });
