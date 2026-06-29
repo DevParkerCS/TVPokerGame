@@ -61,7 +61,13 @@ public class SocketManager : MonoBehaviour
         if (gameManager == null)
             gameManager = FindObjectOfType<GameManager>();
 
-        await Connect();
+        bool connected = await Connect();
+        if (!connected)
+        {
+            Debug.LogError($"TV socket could not connect to http://localhost:{ServerPort}/tv. Start/build the server first, or add LocalServerLauncher to the scene.");
+            return;
+        }
+
         await TryCreateRoom();
     }
 
@@ -73,7 +79,7 @@ public class SocketManager : MonoBehaviour
                   .ToString() ?? "localhost";
     }
 
-    private async Task Connect()
+    private async Task<bool> Connect()
     {
         var uri = new Uri($"http://localhost:{ServerPort}/tv");
         isConnected = false;
@@ -118,16 +124,24 @@ public class SocketManager : MonoBehaviour
         try
         {
             await socket.ConnectAsync();
+            return true;
         }
         catch (Exception ex)
         {
             errConnecting = true;
             Debug.LogError("Connect failed: " + ex.Message);
+            return false;
         }
     }
 
     public async Task TryCreateRoom()
     {
+        if (socket == null || !isConnected)
+        {
+            Debug.LogError("Cannot create room because the TV socket is not connected.");
+            return;
+        }
+
         try
         {
             CreateRoomAck Ack = await RoomSocket.CreateRoomAsync(socket);
