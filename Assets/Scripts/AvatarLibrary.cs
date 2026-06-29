@@ -26,6 +26,10 @@ public class AvatarLibrary : ScriptableObject
             foreach (var e in entries)
                 lookup[e.id] = e.sprite;
         }
-        return lookup.TryGetValue(id, out var s) ? s : null;
+
+        if (!string.IsNullOrWhiteSpace(id) && lookup.TryGetValue(id, out var s))
+            return s;
+
+        return entries.Count > 0 ? entries[0].sprite : null;
     }
 }

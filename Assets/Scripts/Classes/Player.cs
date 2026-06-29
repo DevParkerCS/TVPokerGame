@@ -16,11 +16,16 @@ public class Player
     #endregion
 
     public Player(int chipBalance, string playerName, string iconCode)
+        : this(Guid.NewGuid().ToString(), chipBalance, playerName, iconCode)
     {
+    }
+
+    public Player(string id, int chipBalance, string playerName, string iconCode)
+    {
+        ID = id;
         this.ChipBalance = chipBalance;
         this.PlayerName = playerName;
         this.IconCode = iconCode;
-        ID = Guid.NewGuid().ToString();
     }
 
     #region Methods
@@ -38,6 +43,9 @@ public class Player
     public void Bet(int newTotalBet)
     {
         int toAdd = newTotalBet - CurBet;
+        if (toAdd <= 0) return;
+
+        toAdd = Math.Min(toAdd, ChipBalance);
         ChipBalance -= toAdd;
         TotalBet += toAdd;
         CurBet += toAdd;

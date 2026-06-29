@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSocket } from "../../Context/SocketContext";
 import styles from "./PlayerInfo.module.scss";
 import { Avatars } from "./components/Avatars/Avatars";
@@ -6,6 +7,7 @@ import { ColorPicker } from "./components/ColorPicker/ColorPicker";
 import { JoinRoom } from "../../util/SocketUtil";
 
 export type PlayerInfo = {
+  roomId: string;
   name: string;
   spriteCode: string;
   color: ColorType;
@@ -19,8 +21,11 @@ export type ColorType = {
 
 export const PlayerInfo = () => {
   const socketContext = useSocket();
+  const navigate = useNavigate();
   const [stepIndex, setStepIndex] = useState(0);
+  const [error, setError] = useState("");
   const [playerInfo, setPlayerInfo] = useState<PlayerInfo>({
+    roomId: "",
     name: "",
     spriteCode: "",
     color: { r: 0, g: 168, b: 132 },
@@ -28,35 +33,43 @@ export const PlayerInfo = () => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
   const handleClick = async () => {
+    setError("");
+
     switch (stepIndex) {
       case 0:
         if (playerInfo.spriteCode !== "") {
           setStepIndex(stepIndex + 1);
+        } else {
+          setError("Choose an avatar first.");
         }
         break;
       case 1:
-        if (playerInfo.name !== "" && playerInfo.color) {
+        if (playerInfo.name !== "" && playerInfo.roomId !== "") {
           try {
-            const gameData = await JoinRoom(playerInfo, socketContext.socket);
-            if (gameData) {
-              socketContext.setGameState(gameData);
-            }
+            const cleanedInfo = {
+              ...playerInfo,
+              roomId: playerInfo.roomId.trim().toUpperCase(),
+              name: playerInfo.name.trim(),
+            };
+            const gameData = await JoinRoom(cleanedInfo, socketContext.socket);
+            socketContext.setRoomId(cleanedInfo.roomId);
+            socketContext.setGameState(gameData);
+            navigate("/game");
           } catch (e) {
-            console.log("Error Joining Room.  Please Try Again");
+            setError("Could not join room. Check the code and try again.");
           }
+        } else {
+          setError("Enter your name and the room code from the TV.");
         }
         break;
-      case 2:
     }
   };
-
-  const handlePlayerNameChange = () => {};
 
   return (
     <div className={styles.contentWrapper}>
       <div className={styles.txtWrapper}>
         <h1 className={styles.joinTitle}>Join TV Poker</h1>
-        <p className={styles.playersTxt}>Players: 3/10</p>
+        <p className={styles.playersTxt}>Enter the room code shown on the TV.</p>
       </div>
 
       {stepIndex === 0 && (
@@ -71,8 +84,28 @@ export const PlayerInfo = () => {
       )}
 
       {stepIndex === 1 && (
-        <ColorPicker setPlayerInfo={setPlayerInfo} playerInfo={playerInfo} />
+        <>
+          <ColorPicker setPlayerInfo={setPlayerInfo} playerInfo={playerInfo} />
+          <div className={styles.inputWrapper}>
+            <label className={styles.inputLabel} htmlFor="room-input">
+              Room Code:
+            </label>
+            <input
+              className={styles.nameInput}
+              value={playerInfo.roomId}
+              onChange={(e) =>
+                setPlayerInfo({
+                  ...playerInfo,
+                  roomId: e.target.value.toUpperCase(),
+                })
+              }
+              id="room-input"
+            />
+          </div>
+        </>
       )}
+
+      {error && <p className={styles.playersTxt}>{error}</p>}
 
       <div className={styles.btnsWrapper}>
         {stepIndex === 1 && (

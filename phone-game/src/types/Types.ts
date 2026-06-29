@@ -1,9 +1,12 @@
-import { GameStateType } from "../Context/SocketContext";
+import type { GameStateType } from "../Context/SocketContext";
+import type { PlayerInfo } from "../Pages/PlayerInfo/PlayerInfo";
 
 /** Generic ack envelope shared by client & server */
 export type Ack<TData, TErr = string> =
   | { ok: true; data: TData }
   | { ok: false; error: TErr };
+
+export type PlayerActionType = "fold" | "check" | "call" | "bet" | "raise";
 
 /**
  * Describe every client→server event once,
@@ -11,8 +14,13 @@ export type Ack<TData, TErr = string> =
  */
 export interface EmitMap {
   "join-table": {
-    payload: { tableId: number };
+    payload: PlayerInfo;
     response: GameStateType;
+    error: string;
+  };
+  "player-action": {
+    payload: { roomId: string; playerId: string; action: PlayerActionType; amount?: number };
+    response: { accepted: boolean };
     error: string;
   };
   "chat:send": {

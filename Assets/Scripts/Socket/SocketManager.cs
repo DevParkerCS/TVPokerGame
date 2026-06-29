@@ -18,22 +18,64 @@ public enum ConnectionStatus
     Error
 }
 
+[Serializable]
+public class RemotePlayerColor
+{
+    public int r;
+    public int g;
+    public int b;
+}
+
+[Serializable]
+public class RemotePlayerPayload
+{
+    public string roomId;
+    public string playerId;
+    public string name;
+    public string spriteCode;
+    public RemotePlayerColor color;
+    public int balance;
+}
+
+[Serializable]
+public class RemotePlayerActionPayload
+{
+    public string playerId;
+    public string action;
+    public int amount;
+}
+
 public class SocketManager : MonoBehaviour
 {
     private SocketIOUnity socket;
+    [SerializeField] private LocalServerLauncher servLauncher;
+    [SerializeField] private GameManager gameManager;
     public string roomId = string.Empty;
     public bool isConnected = false;
     public bool errConnecting = false;
 
+    private int ServerPort => servLauncher != null ? servLauncher.port : 5757;
+
     private async void Start()
     {
+        if (gameManager == null)
+            gameManager = FindObjectOfType<GameManager>();
+
         await Connect();
         await TryCreateRoom();
     }
 
+    string GetLocalIPv4()
+    {
+        return Dns.GetHostEntry(Dns.GetHostName())
+                  .AddressList
+                  .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)?
+                  .ToString() ?? "localhost";
+    }
+
     private async Task Connect()
     {
-        var uri = new Uri($"http://localhost:5757/tv");
+        var uri = new Uri($"http://localhost:{ServerPort}/tv");
         isConnected = false;
         errConnecting = false;
 
@@ -50,8 +92,28 @@ public class SocketManager : MonoBehaviour
         });
         socket.JsonSerializer = new NewtonsoftJsonSerializer();
 
-        socket.OnConnected += (_, __) => Debug.Log("Connected");
-        socket.OnDisconnected += (_, reason) => Debug.Log("Disconnected: " + reason);
+        socket.OnConnected += (_, __) =>
+        {
+            isConnected = true;
+            Debug.Log("Connected");
+        };
+        socket.OnDisconnected += (_, reason) =>
+        {
+            isConnected = false;
+            Debug.Log("Disconnected: " + reason);
+        };
+
+        socket.OnUnityThread("player-joined", response =>
+        {
+            var payload = response.GetValue<RemotePlayerPayload>();
+            gameManager?.AddRemotePlayer(payload);
+        });
+
+        socket.OnUnityThread("player-action", response =>
+        {
+            var payload = response.GetValue<RemotePlayerActionPayload>();
+            gameManager?.HandleRemotePlayerAction(payload.playerId, payload.action, payload.amount);
+        });
 
         try
         {
@@ -59,6 +121,7 @@ public class SocketManager : MonoBehaviour
         }
         catch (Exception ex)
         {
+            errConnecting = true;
             Debug.LogError("Connect failed: " + ex.Message);
         }
     }
@@ -79,8 +142,22 @@ public class SocketManager : MonoBehaviour
 
         }catch (Exception ex)
         {
-            Debug.LogError("Failed to create room");
+            Debug.LogError("Failed to create room: " + ex.Message);
         }
     }
-}
 
+    private void OnGUI()
+    {
+        if (string.IsNullOrEmpty(roomId)) return;
+
+        GUIStyle style = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 32,
+            alignment = TextAnchor.UpperLeft
+        };
+        style.normal.textColor = Color.white;
+
+        string phoneUrl = $"http://{GetLocalIPv4()}:3000";
+        GUI.Label(new Rect(24, 24, 900, 120), $"Room Code: {roomId}\nPhone: {phoneUrl}", style);
+    }
+}

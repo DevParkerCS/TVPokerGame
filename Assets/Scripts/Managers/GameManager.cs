@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,6 +17,7 @@ public class GameManager : MonoBehaviour
     private int curToAct = 0;
     private int lastToAct = 0;
     private int curStreet = 0;
+    private bool isGameStarted = false;
     #endregion
     #region Serialized Fields
     [SerializeField] public List<PlayerManager> PlayerSeats;
@@ -30,23 +31,74 @@ public class GameManager : MonoBehaviour
     [SerializeField] private AvatarLibrary avatarLib;
     [SerializeField] private PotManager potManager;
     [SerializeField] private ShowdownManager showdownManager;
+    [SerializeField] private bool useTestPlayers = false;
     #endregion
 
     private void Awake()
     {
         cardManager = GetComponent<CardManager>();
         PlayersData = new();
-        Players = new(PlayersData.Count);
+        Players = new(PlayerSeats.Count);
 
         for (int i = 0; i < PlayerSeats.Count; i++)
         {
             PlayerSeats[i].gameObject.SetActive(false);
         }
 
-        for (int i = 0; i < 10; i++)
+        if (useTestPlayers)
         {
-            Player player = new Player(10000, $"John{i}", "green_mus");
-            PlayersData.Add(player);
+            for (int i = 0; i < 10; i++)
+            {
+                Player player = new Player(10000, $"John{i}", "green_mus");
+                PlayersData.Add(player);
+            }
+        }
+    }
+
+    public void AddRemotePlayer(RemotePlayerPayload payload)
+    {
+        if (isGameStarted)
+        {
+            Debug.LogWarning("Player joined after the hand started. Add late-join seating later.");
+            return;
+        }
+
+        if (PlayersData.Any(p => p.ID == payload.playerId))
+            return;
+
+        if (PlayersData.Count >= PlayerSeats.Count)
+        {
+            Debug.LogWarning("Table is full.");
+            return;
+        }
+
+        int startingBalance = payload.balance > 0 ? payload.balance : 10000;
+        string spriteCode = string.IsNullOrWhiteSpace(payload.spriteCode) ? "green_mus" : payload.spriteCode;
+        Player player = new Player(payload.playerId, startingBalance, payload.name, spriteCode);
+        PlayersData.Add(player);
+
+        Debug.Log($"Remote player joined: {payload.name} ({payload.playerId})");
+    }
+
+    public void HandleRemotePlayerAction(string playerId, string action, int amount)
+    {
+        if (!isGameStarted || Players.Count == 0 || curToAct < 0 || curToAct >= Players.Count)
+            return;
+
+        PlayerManager current = Players[curToAct];
+        if (current.Player.ID != playerId)
+        {
+            Debug.LogWarning($"Ignoring action from {playerId}; current turn is {current.Player.ID}");
+            return;
+        }
+
+        switch (action)
+        {
+            case "fold": PlayerFold(); break;
+            case "check": PlayerCheck(); break;
+            case "call": PlayerCall(); break;
+            case "bet": PlayerBet(amount); break;
+            case "raise": PlayerRaise(amount); break;
         }
     }
 
@@ -55,8 +107,8 @@ public class GameManager : MonoBehaviour
         PlayerManager pm = Players[curToAct];
         Player player = pm.Player;
 
-        BetManager.ApplyBet(player, amount);          // updates lastBetAmt
-        lastToAct = curToAct;                         // opener becomes closer
+        BetManager.ApplyBet(player, amount);
+        lastToAct = curToAct;
         pm.DisplayBet(amount, BetManager.BetType.Bet);
 
         MoveToNextPlayer();
@@ -91,7 +143,6 @@ public class GameManager : MonoBehaviour
         MoveToNextPlayer();
     }
 
-    // TODO: Implement player folding
     public void PlayerFold()
     {
         PlayerManager pm = Players[curToAct];
@@ -117,16 +168,22 @@ public class GameManager : MonoBehaviour
         raiseBtn.SetActive(!noBetYet && !playerIsAllIn);
         callBtn.SetActive(!noBetYet && !playerMatchedBet && !playerIsAllIn);
         checkBtn.SetActive(noBetYet || playerMatchedBet);
-
-        // You’ll still want a Fold button visible at all times
     }
 
     public void StartGame()
     {
-        startGameBtn.gameObject.SetActive(false);
-        Util.Shuffle(PlayersData);
+        if (PlayersData.Count < 2)
+        {
+            Debug.LogWarning("Need at least 2 players to start.");
+            return;
+        }
 
-        for (int i = 0; i < PlayersData.Count; i++)
+        startGameBtn.gameObject.SetActive(false);
+        isGameStarted = true;
+        Util.Shuffle(PlayersData);
+        Players.Clear();
+
+        for (int i = 0; i < PlayersData.Count && i < PlayerSeats.Count; i++)
         {
             PlayerSeats[i].gameObject.SetActive(true);
             PlayerSeats[i].Player = PlayersData[i];
@@ -137,35 +194,47 @@ public class GameManager : MonoBehaviour
         dealerIndex = Random.Range(0, Players.Count);
         Players[dealerIndex].ToggleButton();
 
-        // Display info that game is starting
-
         StartCoroutine(StartRound());
         StartCoroutine(StartBlinds());
     }
 
-    // TODO: Fix this
     private void EndRound()
     {
         potManager.AddAllBetsToPot(Players);
-        SortedDictionary<int, List<PlayerManager>> winners = showdownManager.HandleShowdown(Players, cardManager);
+
+        List<PlayerManager> remainingPlayers = Players
+            .Where(pm => !pm.Player.HasFolded && pm.Player.Cards.Count == 2)
+            .ToList();
+
+        SortedDictionary<int, List<PlayerManager>> winners = new();
+        if (remainingPlayers.Count == 1)
+        {
+            winners[0] = remainingPlayers;
+        }
+        else
+        {
+            winners = showdownManager.HandleShowdown(remainingPlayers, cardManager);
+        }
+
         Dictionary<string, int> payouts = potManager.GetWinnersPayout(winners);
-
         DisplayPayouts(winners, payouts);
+        ResetForNextHand();
+        StartCoroutine(StartRound());
+    }
 
+    private void ResetForNextHand()
+    {
         Players[dealerIndex].ToggleButton();
         dealerIndex = (dealerIndex + 1) % Players.Count;
         Players[dealerIndex].ToggleButton();
         cardManager.ResetCards();
         BetManager.ResetBets();
-        // Display something to notify of next round Maybe shuffle.
-       
+
         for(int i = 0; i < Players.Count; i++)
         {
             Players[i].ResetAllVisual();
             Players[i].Player.ResetForNewHand();
         }
-
-        StartCoroutine(StartRound());
     }
 
     private void StartNextStreet()
@@ -181,16 +250,19 @@ public class GameManager : MonoBehaviour
             pm.Player.ResetForNewStreet();
         }
 
-        switch (curStreet)
-        {
-            case 1: cardManager.DealFlop(); break;
-            case 2: cardManager.DealTurn(); break;
-            case 3: cardManager.DealRiver(); break;
-        }
-
+        DealCurrentStreet();
 
         curToAct = FindNextActivePlayer(smallBlindIndex - 1);
-        if (curToAct == -1 || ActivePlayerCount() == 1)
+        if (curToAct == -1)
+        {
+            if (ActivePlayerCount() > 1)
+                RunOutBoardAndEndRound();
+            else
+                EndRound();
+            return;
+        }
+
+        if (ActivePlayerCount() == 1)
         {
             EndRound();
             return;
@@ -202,12 +274,31 @@ public class GameManager : MonoBehaviour
         Players[curToAct].ToggleTurn(true);
     }
 
+    private void DealCurrentStreet()
+    {
+        switch (curStreet)
+        {
+            case 1: cardManager.DealFlop(); break;
+            case 2: cardManager.DealTurn(); break;
+            case 3: cardManager.DealRiver(); break;
+        }
+    }
+
+    private void RunOutBoardAndEndRound()
+    {
+        while (curStreet < 3)
+        {
+            curStreet++;
+            DealCurrentStreet();
+        }
+        EndRound();
+    }
+
     private void MoveToNextPlayer()
     {
         Players[curToAct].ToggleTurn(false);
 
         int nextIndex = FindNextActivePlayer(curToAct);
-
         bool streetComplete = nextIndex == -1 || nextIndex == lastToAct;
 
         if (streetComplete)
@@ -218,7 +309,7 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                EndRound();   
+                EndRound();
             }
             return;
         }
@@ -238,15 +329,14 @@ public class GameManager : MonoBehaviour
             if (!p.HasFolded && p.ChipBalance > 0)
                 return idx;
         }
-        return -1;   // everyone else folded or broke
+        return -1;
     }
 
-    // Helper: quick count of players still contesting the pot
     private int ActivePlayerCount()
     {
         int n = 0;
         foreach (var pm in Players)
-            if (!pm.Player.HasFolded && pm.Player.ChipBalance > 0)
+            if (!pm.Player.HasFolded)
                 n++;
         return n;
     }
@@ -266,7 +356,6 @@ public class GameManager : MonoBehaviour
         Players[bigBlindIndex].DisplayBet(BetManager.GetBigBlind(), BetManager.BetType.Blind);
 
         Players[curToAct].ToggleTurn(true);
-
         SetActionsForPlayer(Players[curToAct].Player);
     }
 
