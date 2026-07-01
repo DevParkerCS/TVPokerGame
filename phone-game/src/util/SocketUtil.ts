@@ -54,6 +54,19 @@ export const JoinRoom = async (playerInfo: JoinTableRequest, socket: Socket) => 
   return res;
 };
 
+export const LeaveTable = async (
+  roomId: string,
+  playerId: string,
+  socket: Socket
+) => {
+  return emitSafe(
+    "leave-table",
+    { roomId, playerId },
+    5000,
+    socket
+  );
+};
+
 export const SendPlayerAction = async (
   roomId: string,
   playerId: string,
