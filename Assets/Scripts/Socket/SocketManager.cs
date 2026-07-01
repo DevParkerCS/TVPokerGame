@@ -46,6 +46,13 @@ public class RemotePlayerActionPayload
 }
 
 [Serializable]
+public class RemotePlayerStateSyncPayload
+{
+    public string roomId;
+    public string playerId;
+}
+
+[Serializable]
 public class CardPayload
 {
     public string rank;
@@ -166,6 +173,14 @@ public class SocketManager : MonoBehaviour
         {
             var payload = response.GetValue<RemotePlayerActionPayload>();
             gameManager?.HandleRemotePlayerAction(payload.playerId, payload.action, payload.amount);
+        });
+
+        socket.OnUnityThread("request-phone-state-sync", response =>
+        {
+            var payload = response.GetValue<RemotePlayerStateSyncPayload>();
+            Debug.Log($"Phone state sync requested for {payload.playerId}");
+            PhoneTurnStateReporter reporter = FindObjectOfType<PhoneTurnStateReporter>();
+            reporter?.ForceSendTurnStates();
         });
 
         try
