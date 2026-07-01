@@ -9,6 +9,7 @@ export type GameState = {
   curPlayerTurn: number;
   blinds: BlindState;
   lastBetAmt: number;
+  isStarted: boolean;
 };
 
 // ** Socket Payloads ** //
@@ -29,6 +30,16 @@ export type JoinTablePayload = {
 export type PlayerJoinedPayload = JoinTablePayload & {
   playerId: string;
   balance: number;
+};
+
+export type LeaveTablePayload = {
+  roomId: string;
+  playerId: string;
+};
+
+export type PlayerLeftPayload = {
+  roomId: string;
+  playerId: string;
 };
 
 export type PlayerActionType = "fold" | "check" | "call" | "bet" | "raise";
