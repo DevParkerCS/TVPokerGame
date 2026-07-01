@@ -61,6 +61,12 @@ public class RemotePlayerStateSyncPayload
 }
 
 [Serializable]
+public class GameStartedPayload
+{
+    public string roomId;
+}
+
+[Serializable]
 public class CardPayload
 {
     public string rank;
@@ -389,6 +395,21 @@ public class SocketManager : MonoBehaviour
         }catch (Exception ex)
         {
             Debug.LogError("Failed to create room: " + ex.Message);
+        }
+    }
+
+    public async void SendGameStarted()
+    {
+        if (socket == null || !isConnected || string.IsNullOrEmpty(roomId))
+            return;
+
+        try
+        {
+            await socket.EmitAsync("game-started", new GameStartedPayload { roomId = roomId });
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to mark game as started on server: {ex.Message}");
         }
     }
 
