@@ -92,6 +92,21 @@ public class GameManager : MonoBehaviour
         UpdateWaitingForPlayersStatus();
     }
 
+    public void RemoveRemotePlayer(string playerId)
+    {
+        if (isGameStarted)
+        {
+            Debug.LogWarning($"Ignoring leave from {playerId}; game already started.");
+            return;
+        }
+
+        int removedCount = PlayersData.RemoveAll(p => p.ID == playerId);
+        if (removedCount > 0)
+            Debug.Log($"Remote player left: {playerId}");
+
+        UpdateWaitingForPlayersStatus();
+    }
+
     public void HandleRemotePlayerAction(string playerId, string action, int amount)
     {
         if (!isGameStarted || isEndingRound || Players.Count == 0 || curToAct < 0 || curToAct >= Players.Count)
