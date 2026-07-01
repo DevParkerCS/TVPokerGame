@@ -3,9 +3,11 @@ import { games } from "../State/GameState";
 import {
   CardPayload,
   JoinTablePayload,
+  LeaveTablePayload,
   PhoneGameState,
   PlayerActionPayload,
   PlayerJoinedPayload,
+  PlayerLeftPayload,
 } from "../Types/Types";
 
 const STARTING_BALANCE = 10000;
@@ -106,6 +108,46 @@ export function registerPhone(ns: Namespace) {
             playerId,
           });
         }
+      } catch (e) {
+        ack({ ok: false, error: String(e) });
+      }
+    });
+
+    socket.on("leave-table", (payload: LeaveTablePayload, ack) => {
+      try {
+        const roomId = cleanRoomId(payload.roomId || socket.data.roomId || "");
+        const playerId = payload.playerId || socket.data.playerId;
+        const game = games.get(roomId);
+
+        if (!game) {
+          ack({ ok: false, error: "Room not found" });
+          return;
+        }
+
+        if (!playerId || !game.players[playerId]) {
+          ack({ ok: true, data: { left: true, removedFromTable: false } });
+          return;
+        }
+
+        socket.leave(roomId);
+        socket.leave(playerId);
+        socket.data.roomId = undefined;
+        socket.data.playerId = undefined;
+
+        if (game.isStarted) {
+          ack({ ok: true, data: { left: true, removedFromTable: false } });
+          return;
+        }
+
+        delete game.players[playerId];
+
+        const playerLeft: PlayerLeftPayload = {
+          roomId,
+          playerId,
+        };
+
+        ns.server.of("/tv").to(roomId).emit("player-left", playerLeft);
+        ack({ ok: true, data: { left: true, removedFromTable: true } });
       } catch (e) {
         ack({ ok: false, error: String(e) });
       }
