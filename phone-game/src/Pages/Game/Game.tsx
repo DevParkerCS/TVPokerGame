@@ -2,8 +2,13 @@ import React, { useEffect, useState } from "react";
 import styles from "./Game.module.scss";
 import { Actions } from "./components/Actions/Actions";
 import { CardPayload, useSocket } from "../../Context/SocketContext";
-import { SendPlayerAction } from "../../util/SocketUtil";
+import { JoinRoom, SendPlayerAction } from "../../util/SocketUtil";
 import { PlayerActionType } from "../../types/Types";
+import {
+  clearPlayerSession,
+  getSavedPlayerSession,
+  savePlayerSession,
+} from "../../util/PlayerSessionStorage";
 
 const cardImageContext = require.context(
   "../../assets",
@@ -95,7 +100,41 @@ export const Game = () => {
   const [cardsShown, setCardsShown] = useState(false);
   const [status, setStatus] = useState("");
   const [actionLocked, setActionLocked] = useState(false);
-  const { gameState, roomId, socket, holeCards, turnState } = useSocket();
+  const [hasTriedReconnect, setHasTriedReconnect] = useState(false);
+  const {
+    gameState,
+    roomId,
+    socket,
+    holeCards,
+    turnState,
+    setRoomId,
+    setGameState,
+  } = useSocket();
+
+  useEffect(() => {
+    if (gameState.playerId || hasTriedReconnect) return;
+
+    const savedSession = getSavedPlayerSession();
+    if (!savedSession) return;
+
+    setHasTriedReconnect(true);
+    setStatus("Reconnecting...");
+
+    JoinRoom(savedSession, socket)
+      .then((gameData) => {
+        setRoomId(savedSession.roomId);
+        setGameState(gameData);
+        savePlayerSession({
+          ...savedSession,
+          playerId: gameData.playerId,
+        });
+        setStatus("Reconnected");
+      })
+      .catch(() => {
+        clearPlayerSession();
+        setStatus("Session expired. Rejoin from the TV room code.");
+      });
+  }, [gameState.playerId, hasTriedReconnect, setGameState, setRoomId, socket]);
 
   useEffect(() => {
     setActionLocked(false);
