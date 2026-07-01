@@ -1,6 +1,5 @@
 import { Socket } from "socket.io-client";
-import type { PlayerInfo } from "../Pages/PlayerInfo/PlayerInfo";
-import type { Ack, EmitMap, PlayerActionType } from "../types/Types";
+import type { Ack, EmitMap, JoinTableRequest, PlayerActionType } from "../types/Types";
 import type { GameStateType } from "../Context/SocketContext";
 
 /**
@@ -44,7 +43,7 @@ export function emitSafe<Evt extends keyof EmitMap>(
   });
 }
 
-export const JoinRoom = async (playerInfo: PlayerInfo, socket: Socket) => {
+export const JoinRoom = async (playerInfo: JoinTableRequest, socket: Socket) => {
   const res: GameStateType = await emitSafe(
     "join-table",
     playerInfo,
