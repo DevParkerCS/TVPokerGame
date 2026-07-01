@@ -223,6 +223,7 @@ public class GameManager : MonoBehaviour
 
         startGameBtn.gameObject.SetActive(false);
         isGameStarted = true;
+        socketManager?.SendGameStarted();
         SetStatusText(string.Empty);
         Util.Shuffle(PlayersData);
         Players.Clear();
