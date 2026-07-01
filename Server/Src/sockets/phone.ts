@@ -14,7 +14,7 @@ function cleanRoomId(roomId: string): string {
   return roomId.trim().toUpperCase();
 }
 
-function toCardPayload(card: { rank: string; suit: string }): CardPayload {
+function toCardPayload(card: { rank: string | number; suit: string | number }): CardPayload {
   const rank = String(card.rank).toUpperCase();
   const suit = String(card.suit).toUpperCase();
   return {
