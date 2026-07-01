@@ -1,6 +1,7 @@
 import { Namespace } from "socket.io";
 import { games } from "../State/GameState";
 import {
+  CardPayload,
   JoinTablePayload,
   PhoneGameState,
   PlayerActionPayload,
@@ -11,6 +12,16 @@ const STARTING_BALANCE = 10000;
 
 function cleanRoomId(roomId: string): string {
   return roomId.trim().toUpperCase();
+}
+
+function toCardPayload(card: { rank: string; suit: string }): CardPayload {
+  const rank = String(card.rank).toUpperCase();
+  const suit = String(card.suit).toUpperCase();
+  return {
+    rank,
+    suit,
+    code: `${rank}${suit}`,
+  };
 }
 
 // phone.ts
@@ -28,40 +39,53 @@ export function registerPhone(ns: Namespace) {
           return;
         }
 
-        const playerId = socket.id;
-        const playerJoined: PlayerJoinedPayload = {
-          roomId,
-          playerId,
-          name: payload.name.trim(),
-          spriteCode: payload.spriteCode,
-          color: payload.color,
-          balance: STARTING_BALANCE,
-        };
+        const requestedPlayerId = payload.playerId?.trim();
+        const isReconnect = !!requestedPlayerId && !!game.players[requestedPlayerId];
+        const playerId = isReconnect ? requestedPlayerId : socket.id;
+        const playerName = payload.name.trim();
 
-        game.players[playerId] = {
-          name: playerJoined.name,
-          socketId: socket.id,
-          spriteCode: playerJoined.spriteCode,
-          color: playerJoined.color,
-          cards: [],
-          balance: STARTING_BALANCE,
-          totalBet: 0,
-          curBet: 0,
-          hasFolded: false,
-        };
+        if (isReconnect) {
+          game.players[playerId].socketId = socket.id;
+          game.players[playerId].name = playerName || game.players[playerId].name;
+          game.players[playerId].spriteCode = payload.spriteCode || game.players[playerId].spriteCode;
+          game.players[playerId].color = payload.color || game.players[playerId].color;
+        } else {
+          game.players[playerId] = {
+            name: playerName,
+            socketId: socket.id,
+            spriteCode: payload.spriteCode,
+            color: payload.color,
+            cards: [],
+            balance: STARTING_BALANCE,
+            totalBet: 0,
+            curBet: 0,
+            hasFolded: false,
+          };
+        }
 
         socket.join(roomId);
         socket.join(playerId);
         socket.data.roomId = roomId;
         socket.data.playerId = playerId;
 
-        console.log(`Phone ${playerId} joined room ${roomId}`);
+        console.log(`Phone ${playerId} ${isReconnect ? "reconnected to" : "joined"} room ${roomId}`);
 
-        ns.server.of("/tv").to(roomId).emit("player-joined", playerJoined);
+        if (!isReconnect) {
+          const playerJoined: PlayerJoinedPayload = {
+            roomId,
+            playerId,
+            name: game.players[playerId].name,
+            spriteCode: game.players[playerId].spriteCode,
+            color: game.players[playerId].color,
+            balance: STARTING_BALANCE,
+          };
+
+          ns.server.of("/tv").to(roomId).emit("player-joined", playerJoined);
+        }
 
         const phoneGameState: PhoneGameState = {
           playerId,
-          balance: STARTING_BALANCE,
+          balance: game.players[playerId].balance,
           lastBet: game.lastBetAmt,
           isPlayerTurn: false,
           curBB: 0,
@@ -69,6 +93,12 @@ export function registerPhone(ns: Namespace) {
         };
 
         ack({ ok: true, data: phoneGameState });
+
+        if (game.players[playerId].cards.length > 0) {
+          socket.emit("hole-cards", {
+            cards: game.players[playerId].cards.map(toCardPayload),
+          });
+        }
       } catch (e) {
         ack({ ok: false, error: String(e) });
       }
