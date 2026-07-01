@@ -235,7 +235,15 @@ public class GameManager : MonoBehaviour
             PlayerSeats[i].gameObject.SetActive(true);
             PlayerSeats[i].Player = PlayersData[i];
             PlayerSeats[i].InitializePlayer();
-            Players.Add(PlayerSeats[i]);
+            if (CanPlayNextHand(PlayerSeats[i].Player))
+                Players.Add(PlayerSeats[i]);
+        }
+
+        if (Players.Count < 2)
+        {
+            SetStatusText("Need at least 2 players with chips to start.");
+            isGameStarted = false;
+            return;
         }
 
         dealerIndex = UnityEngine.Random.Range(0, Players.Count);
@@ -291,7 +299,7 @@ public class GameManager : MonoBehaviour
         isEndingRound = false;
         ClearTurnIndicators();
 
-        string gameEndedMessage = $"{winner.Player.PlayerName} wins the game!";
+        string gameEndedMessage = winner != null ? $"{winner.Player.PlayerName} wins the game!" : "Game over";
         SetStatusText(gameEndedMessage);
         SendHandEndedToPhones(gameEndedMessage);
         Debug.Log(gameEndedMessage);
@@ -305,6 +313,9 @@ public class GameManager : MonoBehaviour
             yield break;
 
         ResetForNextHand();
+        if (isGameOver)
+            yield break;
+
         isEndingRound = false;
         SetStatusText(string.Empty);
         StartCoroutine(StartRound());
@@ -351,17 +362,57 @@ public class GameManager : MonoBehaviour
 
     private void ResetForNextHand()
     {
-        Players[dealerIndex].ToggleButton();
-        dealerIndex = (dealerIndex + 1) % Players.Count;
-        Players[dealerIndex].ToggleButton();
+        string previousDealerPlayerId = GetCurrentDealerPlayerId();
+        if (Players.Count > 0 && dealerIndex >= 0 && dealerIndex < Players.Count)
+            Players[dealerIndex].ToggleButton();
+
         cardManager.ResetCards();
         BetManager.ResetBets();
 
-        for(int i = 0; i < Players.Count; i++)
+        foreach (PlayerManager seat in PlayerSeats)
         {
-            Players[i].ResetAllVisual();
-            Players[i].Player.ResetForNewHand();
+            if (!seat.gameObject.activeSelf || seat.Player == null)
+                continue;
+
+            seat.ResetAllVisual();
+            seat.Player.ResetForNewHand();
+            seat.UpdatePlayerBalance();
+
+            if (!CanPlayNextHand(seat.Player))
+                seat.DisplayEliminated();
         }
+
+        RefreshActivePlayersForNextHand();
+
+        if (Players.Count < 2)
+        {
+            EndGame(Players.Count == 1 ? Players[0] : null);
+            return;
+        }
+
+        int previousDealerIndex = Players.FindIndex(pm => pm.Player.ID == previousDealerPlayerId);
+        dealerIndex = previousDealerIndex >= 0 ? (previousDealerIndex + 1) % Players.Count : dealerIndex % Players.Count;
+        Players[dealerIndex].ToggleButton();
+    }
+
+    private void RefreshActivePlayersForNextHand()
+    {
+        Players = PlayerSeats
+            .Where(seat => seat.gameObject.activeSelf && seat.Player != null && CanPlayNextHand(seat.Player))
+            .ToList();
+    }
+
+    private bool CanPlayNextHand(Player player)
+    {
+        return player != null && player.ChipBalance > 0;
+    }
+
+    private string GetCurrentDealerPlayerId()
+    {
+        if (Players.Count == 0 || dealerIndex < 0 || dealerIndex >= Players.Count)
+            return string.Empty;
+
+        return Players[dealerIndex].Player.ID;
     }
 
     private void StartNextStreet()
@@ -506,8 +557,8 @@ public class GameManager : MonoBehaviour
 
     private PlayerManager GetGameWinnerIfComplete()
     {
-        List<PlayerManager> playersWithChips = Players
-            .Where(pm => pm.Player.ChipBalance > 0)
+        List<PlayerManager> playersWithChips = PlayerSeats
+            .Where(seat => seat.gameObject.activeSelf && seat.Player != null && seat.Player.ChipBalance > 0)
             .ToList();
 
         return playersWithChips.Count == 1 ? playersWithChips[0] : null;
@@ -568,6 +619,12 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver)
             yield break;
+
+        if (Players.Count < 2)
+        {
+            EndGame(Players.Count == 1 ? Players[0] : null);
+            yield break;
+        }
 
         handId++;
         curStreet = 0;
