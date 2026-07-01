@@ -32,6 +32,13 @@ public class PhoneTurnStateReporter : MonoBehaviour
         SendTurnStatesIfChanged();
     }
 
+    public void ForceSendTurnStates()
+    {
+        lastSignature = string.Empty;
+        EnsureReferences();
+        SendTurnStatesIfChanged();
+    }
+
     private void EnsureReferences()
     {
         if (socketManager == null)
