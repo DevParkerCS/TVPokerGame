@@ -31,7 +31,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] private PotManager potManager;
     [SerializeField] private ShowdownManager showdownManager;
     [SerializeField] private SocketManager socketManager;
-    [SerializeField] private TMP_Text streetText;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private bool useTestPlayers = false;
     [SerializeField] private float handEndDelaySeconds = 5f;
@@ -60,7 +59,6 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        SetStreetText("WAITING");
         UpdateWaitingForPlayersStatus();
     }
 
@@ -235,7 +233,6 @@ public class GameManager : MonoBehaviour
             return;
 
         isEndingRound = true;
-        SetStreetText("SHOWDOWN");
         ClearTurnIndicators();
         potManager.AddAllBetsToPot(Players);
 
@@ -372,8 +369,6 @@ public class GameManager : MonoBehaviour
             case 2: cardManager.DealTurn(); break;
             case 3: cardManager.DealRiver(); break;
         }
-
-        UpdateStreetText();
     }
 
     private void RunOutBoardAndEndRound()
@@ -522,7 +517,6 @@ public class GameManager : MonoBehaviour
     {
         handId++;
         curStreet = 0;
-        SetStreetText("PREFLOP");
         yield return StartCoroutine(cardManager.DealCards());
         SendHoleCardsToPhones();
         smallBlindIndex = (dealerIndex + 1) % Players.Count;
@@ -601,24 +595,6 @@ public class GameManager : MonoBehaviour
     private int MaxPlayerCount()
     {
         return PlayerSeats != null && PlayerSeats.Count > 0 ? PlayerSeats.Count : 10;
-    }
-
-    private void UpdateStreetText()
-    {
-        switch (curStreet)
-        {
-            case 0: SetStreetText("PREFLOP"); break;
-            case 1: SetStreetText("FLOP"); break;
-            case 2: SetStreetText("TURN"); break;
-            case 3: SetStreetText("RIVER"); break;
-            default: SetStreetText("SHOWDOWN"); break;
-        }
-    }
-
-    private void SetStreetText(string value)
-    {
-        if (streetText != null)
-            streetText.text = value;
     }
 
     private void SetStatusText(string value)
