@@ -23,6 +23,7 @@ export type JoinTablePayload = {
   name: string;
   spriteCode: string;
   color: ColorState;
+  playerId?: string;
 };
 
 export type PlayerJoinedPayload = JoinTablePayload & {
