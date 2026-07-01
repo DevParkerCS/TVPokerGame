@@ -210,7 +210,7 @@ public class GameManager : MonoBehaviour
 
         startGameBtn.gameObject.SetActive(false);
         isGameStarted = true;
-        SetStatusText("Starting hand...");
+        SetStatusText(string.Empty);
         Util.Shuffle(PlayersData);
         Players.Clear();
 
@@ -263,15 +263,11 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator ResetAndStartNextHandAfterDelay()
     {
-        int countdownSeconds = Mathf.CeilToInt(handEndDelaySeconds);
-        for (int remaining = countdownSeconds; remaining > 0; remaining--)
-        {
-            SetStatusText($"Next hand starting in {remaining}");
-            yield return new WaitForSeconds(1f);
-        }
+        yield return new WaitForSeconds(handEndDelaySeconds);
 
         ResetForNextHand();
         isEndingRound = false;
+        SetStatusText(string.Empty);
         StartCoroutine(StartRound());
     }
 
@@ -382,7 +378,6 @@ public class GameManager : MonoBehaviour
 
     private void RunOutBoardAndEndRound()
     {
-        SetStatusText("All remaining action complete — running board");
         while (curStreet < 3)
         {
             curStreet++;
@@ -528,7 +523,6 @@ public class GameManager : MonoBehaviour
         handId++;
         curStreet = 0;
         SetStreetText("PREFLOP");
-        SetStatusText("Dealing cards...");
         yield return StartCoroutine(cardManager.DealCards());
         SendHoleCardsToPhones();
         smallBlindIndex = (dealerIndex + 1) % Players.Count;
