@@ -38,6 +38,23 @@ export function registerTV(ns: Namespace) {
       }
     });
 
+    socket.on("game-started", (payload: { roomId?: string } | undefined, ack) => {
+      try {
+        const roomId = cleanRoomId(payload?.roomId || socket.data.roomId || "");
+        const game = games.get(roomId);
+
+        if (!game) {
+          ack?.({ ok: false, error: "Room not found" });
+          return;
+        }
+
+        game.isStarted = true;
+        ack?.({ ok: true, data: { markedStarted: true } });
+      } catch (e) {
+        ack?.({ ok: false, error: String(e) });
+      }
+    });
+
     socket.on("deal-player-cards", (payload: DealPlayerCardsPayload, ack) => {
       try {
         const roomId = cleanRoomId(payload.roomId || socket.data.roomId || "");
@@ -47,6 +64,8 @@ export function registerTV(ns: Namespace) {
           ack?.({ ok: false, error: "Room not found" });
           return;
         }
+
+        game.isStarted = true;
 
         if (!payload.playerId || !game.players[payload.playerId]) {
           ack?.({ ok: false, error: "Player not found in room" });
