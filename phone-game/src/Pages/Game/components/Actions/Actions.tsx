@@ -6,6 +6,7 @@ import styles from "./Actions.module.scss";
 type ActionsProps = {
   onAction: (action: PlayerActionType, amount?: number) => void;
   turnState?: TurnStateType | null;
+  locked?: boolean;
 };
 
 function clampAmount(value: number, min: number, max: number) {
@@ -13,8 +14,8 @@ function clampAmount(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-export const Actions = ({ onAction, turnState }: ActionsProps) => {
-  const isTurn = turnState?.isPlayerTurn ?? false;
+export const Actions = ({ onAction, turnState, locked = false }: ActionsProps) => {
+  const isTurn = (turnState?.isPlayerTurn ?? false) && !locked;
   const canChooseAmount = isTurn && (!!turnState?.canBet || !!turnState?.canRaise);
   const minAmount = Math.max(0, turnState?.minRaiseTo ?? 0);
   const maxAmount = Math.max(minAmount, (turnState?.playerBet ?? 0) + (turnState?.balance ?? 0));
@@ -53,7 +54,7 @@ export const Actions = ({ onAction, turnState }: ActionsProps) => {
         <div className={styles.amountActions}>
           <label className={styles.amountLabel}>{amountLabel}</label>
           <div className={styles.amountControls}>
-            <button className={styles.amountBtn} onClick={() => updateAmount(actionAmount - stepAmount)}>
+            <button className={styles.amountBtn} disabled={locked} onClick={() => updateAmount(actionAmount - stepAmount)}>
               -
             </button>
             <input
@@ -62,16 +63,17 @@ export const Actions = ({ onAction, turnState }: ActionsProps) => {
               min={minAmount}
               max={maxAmount}
               step={stepAmount}
+              disabled={locked}
               value={actionAmount}
               onChange={(e) => updateAmount(Number(e.target.value))}
             />
-            <button className={styles.amountBtn} onClick={() => updateAmount(actionAmount + stepAmount)}>
+            <button className={styles.amountBtn} disabled={locked} onClick={() => updateAmount(actionAmount + stepAmount)}>
               +
             </button>
           </div>
           <button
             className={styles.actionBtn}
-            disabled={actionAmount < minAmount}
+            disabled={locked || actionAmount < minAmount}
             onClick={() => onAction(amountAction, actionAmount)}
           >
             {amountLabel} ${actionAmount}
