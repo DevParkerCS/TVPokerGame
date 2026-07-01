@@ -127,6 +127,18 @@ public class PlayerManager : MonoBehaviour
         betIndicator.SetActive(true);
     }
 
+    public void DisplayEliminated()
+    {
+        HideCards();
+        ToggleTurn(false);
+        button.SetActive(false);
+        inactiveIndicator.SetActive(true);
+        betText.text = "OUT";
+        betIndicator.GetComponent<Image>().color = Color.grey;
+        betIndicator.SetActive(true);
+        UpdatePlayerBalance();
+    }
+
     public void Raise(int amount)
     {
 
