@@ -22,6 +22,7 @@ public class GameManager : MonoBehaviour
     private int handId = 0;
     private bool isGameStarted = false;
     private bool isEndingRound = false;
+    private bool isGameOver = false;
     #endregion
     #region Serialized Fields
     [SerializeField] public List<PlayerManager> PlayerSeats;
@@ -109,7 +110,7 @@ public class GameManager : MonoBehaviour
 
     public void HandleRemotePlayerAction(string playerId, string action, int amount)
     {
-        if (!isGameStarted || isEndingRound || Players.Count == 0 || curToAct < 0 || curToAct >= Players.Count)
+        if (!isGameStarted || isGameOver || isEndingRound || Players.Count == 0 || curToAct < 0 || curToAct >= Players.Count)
             return;
 
         PlayerManager current = Players[curToAct];
@@ -223,6 +224,7 @@ public class GameManager : MonoBehaviour
 
         startGameBtn.gameObject.SetActive(false);
         isGameStarted = true;
+        isGameOver = false;
         socketManager?.SendGameStarted();
         SetStatusText(string.Empty);
         Util.Shuffle(PlayersData);
@@ -245,7 +247,7 @@ public class GameManager : MonoBehaviour
 
     private void EndRound()
     {
-        if (isEndingRound)
+        if (isEndingRound || isGameOver)
             return;
 
         isEndingRound = true;
@@ -269,14 +271,38 @@ public class GameManager : MonoBehaviour
         Dictionary<string, int> payouts = potManager.GetWinnersPayout(winners);
         DisplayPayouts(winners, payouts);
         string handEndedMessage = BuildHandEndedMessage(payouts);
+
+        PlayerManager gameWinner = GetGameWinnerIfComplete();
+        if (gameWinner != null)
+        {
+            EndGame(gameWinner);
+            return;
+        }
+
         SetStatusText(handEndedMessage);
         SendHandEndedToPhones(handEndedMessage);
         StartCoroutine(ResetAndStartNextHandAfterDelay());
     }
 
+    private void EndGame(PlayerManager winner)
+    {
+        isGameOver = true;
+        isGameStarted = false;
+        isEndingRound = false;
+        ClearTurnIndicators();
+
+        string gameEndedMessage = $"{winner.Player.PlayerName} wins the game!";
+        SetStatusText(gameEndedMessage);
+        SendHandEndedToPhones(gameEndedMessage);
+        Debug.Log(gameEndedMessage);
+    }
+
     private IEnumerator ResetAndStartNextHandAfterDelay()
     {
         yield return new WaitForSeconds(handEndDelaySeconds);
+
+        if (isGameOver)
+            yield break;
 
         ResetForNextHand();
         isEndingRound = false;
@@ -478,6 +504,15 @@ public class GameManager : MonoBehaviour
         return true;
     }
 
+    private PlayerManager GetGameWinnerIfComplete()
+    {
+        List<PlayerManager> playersWithChips = Players
+            .Where(pm => pm.Player.ChipBalance > 0)
+            .ToList();
+
+        return playersWithChips.Count == 1 ? playersWithChips[0] : null;
+    }
+
     private int FindNextActivePlayer(int startIndex)
     {
         int total = Players.Count;
@@ -531,6 +566,9 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator StartRound()
     {
+        if (isGameOver)
+            yield break;
+
         handId++;
         curStreet = 0;
         yield return StartCoroutine(cardManager.DealCards());
