@@ -22,6 +22,11 @@ export interface EmitMap {
     response: GameStateType;
     error: string;
   };
+  "leave-table": {
+    payload: { roomId: string; playerId: string };
+    response: { left: boolean; removedFromTable: boolean };
+    error: string;
+  };
   "player-action": {
     payload: { roomId: string; playerId: string; action: PlayerActionType; amount?: number };
     response: { accepted: boolean };
