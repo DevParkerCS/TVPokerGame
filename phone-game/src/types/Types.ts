@@ -8,13 +8,17 @@ export type Ack<TData, TErr = string> =
 
 export type PlayerActionType = "fold" | "check" | "call" | "bet" | "raise";
 
+export type JoinTableRequest = PlayerInfo & {
+  playerId?: string;
+};
+
 /**
  * Describe every client→server event once,
  * and you get payload/response types everywhere.
  */
 export interface EmitMap {
   "join-table": {
-    payload: PlayerInfo;
+    payload: JoinTableRequest;
     response: GameStateType;
     error: string;
   };
