@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./Game.module.scss";
 import { Actions } from "./components/Actions/Actions";
-import { CardPayload, useSocket } from "../../Context/SocketContext";
-import { JoinRoom, SendPlayerAction } from "../../util/SocketUtil";
+import { CardPayload, createEmptyGameState, useSocket } from "../../Context/SocketContext";
+import { JoinRoom, LeaveTable, SendPlayerAction } from "../../util/SocketUtil";
 import { PlayerActionType } from "../../types/Types";
 import {
   clearPlayerSession,
@@ -97,6 +98,7 @@ function isAllowedAction(action: PlayerActionType, turnState: ReturnType<typeof 
 }
 
 export const Game = () => {
+  const navigate = useNavigate();
   const [cardsShown, setCardsShown] = useState(false);
   const [status, setStatus] = useState("");
   const [actionLocked, setActionLocked] = useState(false);
@@ -109,6 +111,8 @@ export const Game = () => {
     turnState,
     setRoomId,
     setGameState,
+    setHoleCards,
+    setTurnState,
   } = useSocket();
 
   useEffect(() => {
@@ -173,6 +177,35 @@ export const Game = () => {
     }
   }, [holeCards.length]);
 
+  const resetPhoneState = () => {
+    clearPlayerSession();
+    setRoomId("");
+    setHoleCards([]);
+    setTurnState(null);
+    setGameState(createEmptyGameState());
+    setCardsShown(false);
+    setActionLocked(false);
+    setHasTriedReconnect(true);
+    setStatus("");
+  };
+
+  const handleLeaveTable = async () => {
+    const currentRoomId = roomId;
+    const currentPlayerId = gameState.playerId;
+
+    resetPhoneState();
+
+    if (currentRoomId && currentPlayerId) {
+      try {
+        await LeaveTable(currentRoomId, currentPlayerId, socket);
+      } catch {
+        // Local session clear is the important part. Server-side removal may fail if the room is gone.
+      }
+    }
+
+    navigate("/");
+  };
+
   const handleAction = async (action: PlayerActionType, amount?: number) => {
     if (actionLocked) {
       setStatus("Action already sent");
@@ -231,6 +264,9 @@ export const Game = () => {
 
       <Actions onAction={handleAction} turnState={turnState} locked={actionLocked} />
       {status && <p>{status}</p>}
+      <button className={styles.leaveBtn} onClick={handleLeaveTable}>
+        Leave Table
+      </button>
     </div>
   );
 };
