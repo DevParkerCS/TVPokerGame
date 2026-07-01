@@ -5,6 +5,7 @@ import styles from "./PlayerInfo.module.scss";
 import { Avatars } from "./components/Avatars/Avatars";
 import { ColorPicker } from "./components/ColorPicker/ColorPicker";
 import { JoinRoom } from "../../util/SocketUtil";
+import { savePlayerSession } from "../../util/PlayerSessionStorage";
 
 export type PlayerInfo = {
   roomId: string;
@@ -54,6 +55,10 @@ export const PlayerInfo = () => {
             const gameData = await JoinRoom(cleanedInfo, socketContext.socket);
             socketContext.setRoomId(cleanedInfo.roomId);
             socketContext.setGameState(gameData);
+            savePlayerSession({
+              ...cleanedInfo,
+              playerId: gameData.playerId,
+            });
             navigate("/game");
           } catch (e) {
             setError("Could not join room. Check the code and try again.");
