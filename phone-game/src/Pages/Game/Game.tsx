@@ -94,17 +94,25 @@ function isAllowedAction(action: PlayerActionType, turnState: ReturnType<typeof 
 export const Game = () => {
   const [cardsShown, setCardsShown] = useState(false);
   const [status, setStatus] = useState("");
+  const [actionLocked, setActionLocked] = useState(false);
   const { gameState, roomId, socket, holeCards, turnState } = useSocket();
 
   useEffect(() => {
+    setActionLocked(false);
+  }, [turnState]);
+
+  useEffect(() => {
     const onHandEnded = (payload?: { message?: string }) => {
+      setActionLocked(false);
       setStatus(payload?.message || "Hand complete");
     };
     const onHandReset = (payload?: { message?: string }) => {
+      setActionLocked(false);
       setCardsShown(false);
       setStatus(payload?.message || "Waiting for new hand");
     };
     const onHandStarted = (payload?: { message?: string }) => {
+      setActionLocked(false);
       setCardsShown(false);
       setStatus(payload?.message || "New hand started");
     };
@@ -127,17 +135,24 @@ export const Game = () => {
   }, [holeCards.length]);
 
   const handleAction = async (action: PlayerActionType, amount?: number) => {
+    if (actionLocked) {
+      setStatus("Action already sent");
+      return;
+    }
+
     if (!isAllowedAction(action, turnState)) {
       setStatus(turnState?.currentPlayerName ? `Waiting for ${turnState.currentPlayerName}` : "Waiting for turn state");
       return;
     }
 
     const actionAmount = action === "bet" || action === "raise" ? amount ?? turnState?.minRaiseTo : amount;
+    setActionLocked(true);
 
     try {
       await SendPlayerAction(roomId, gameState.playerId, action, actionAmount, socket);
       setStatus(`${action.toUpperCase()} sent`);
     } catch (e) {
+      setActionLocked(false);
       setStatus("Could not send action");
     }
   };
@@ -175,7 +190,7 @@ export const Game = () => {
         <p className={styles.balanceTxt}>${gameState.balance.toLocaleString()}</p>
       </div>
 
-      <Actions onAction={handleAction} turnState={turnState} />
+      <Actions onAction={handleAction} turnState={turnState} locked={actionLocked} />
       {status && <p>{status}</p>}
     </div>
   );
