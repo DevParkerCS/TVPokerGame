@@ -39,6 +39,13 @@ public class RemotePlayerPayload
 }
 
 [Serializable]
+public class RemotePlayerLeftPayload
+{
+    public string roomId;
+    public string playerId;
+}
+
+[Serializable]
 public class RemotePlayerActionPayload
 {
     public string playerId;
@@ -324,6 +331,12 @@ public class SocketManager : MonoBehaviour
         {
             var payload = response.GetValue<RemotePlayerPayload>();
             gameManager?.AddRemotePlayer(payload);
+        });
+
+        socket.OnUnityThread("player-left", response =>
+        {
+            var payload = response.GetValue<RemotePlayerLeftPayload>();
+            gameManager?.RemoveRemotePlayer(payload.playerId);
         });
 
         socket.OnUnityThread("player-action", response =>
