@@ -19,6 +19,7 @@ export const CreateNewGame = (): GameState => {
     curPlayerTurn: 0,
     curStreet: 0,
     lastBetAmt: 0,
+    isStarted: false,
   };
 
   return gameState;
