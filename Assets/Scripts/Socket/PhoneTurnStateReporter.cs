@@ -73,7 +73,7 @@ public class PhoneTurnStateReporter : MonoBehaviour
 
     private void SendStates(PlayerManager current, int potAmount)
     {
-        int bigBlind = SafeGetBigBlind();
+        int minRaiseTo = SafeGetMinimumRaiseTo();
 
         foreach (PlayerManager pm in gameManager.Players)
         {
@@ -84,7 +84,6 @@ public class PhoneTurnStateReporter : MonoBehaviour
             int maxTotalBet = player.CurBet + player.ChipBalance;
             int rawAmountToCall = Math.Max(0, BetManager.lastBetAmt - player.CurBet);
             int amountToCall = Math.Min(rawAmountToCall, player.ChipBalance);
-            int minRaiseTo = noBetYet ? bigBlind : BetManager.lastBetAmt + bigBlind;
             bool callWouldPutPlayerAllIn = rawAmountToCall >= player.ChipBalance;
             bool hasChipsForMinRaise = maxTotalBet >= minRaiseTo;
 
@@ -109,11 +108,11 @@ public class PhoneTurnStateReporter : MonoBehaviour
         }
     }
 
-    private int SafeGetBigBlind()
+    private int SafeGetMinimumRaiseTo()
     {
         try
         {
-            return BetManager.GetBigBlind();
+            return BetManager.GetMinimumRaiseTo();
         }
         catch
         {
