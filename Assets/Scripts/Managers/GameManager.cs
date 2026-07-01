@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -109,9 +110,17 @@ public class GameManager : MonoBehaviour
         PlayerManager pm = Players[curToAct];
         Player player = pm.Player;
 
-        BetManager.ApplyBet(player, amount);
-        lastToAct = curToAct;
-        pm.DisplayBet(amount, BetManager.BetType.Bet);
+        if (!CanBetOrRaise(player, amount))
+            return;
+
+        BetManager.BetResult result = BetManager.ApplyBet(player, amount);
+        if (result.AmountAdded <= 0)
+            return;
+
+        if (result.IsFullRaise)
+            lastToAct = curToAct;
+
+        pm.DisplayBet(player.CurBet, result.IsAllIn ? BetManager.BetType.AllIn : BetManager.BetType.Bet);
 
         MoveToNextPlayer();
     }
@@ -121,9 +130,17 @@ public class GameManager : MonoBehaviour
         var pm = Players[curToAct];
         var player = pm.Player;
 
-        BetManager.ApplyBet(player, amount);
-        lastToAct = curToAct;
-        pm.DisplayBet(amount, BetManager.BetType.Raise);
+        if (!CanBetOrRaise(player, amount))
+            return;
+
+        BetManager.BetResult result = BetManager.ApplyBet(player, amount);
+        if (result.AmountAdded <= 0)
+            return;
+
+        if (result.IsFullRaise)
+            lastToAct = curToAct;
+
+        pm.DisplayBet(player.CurBet, result.IsAllIn ? BetManager.BetType.AllIn : BetManager.BetType.Raise);
 
         MoveToNextPlayer();
     }
@@ -133,14 +150,26 @@ public class GameManager : MonoBehaviour
         var pm = Players[curToAct];
         var player = pm.Player;
 
-        BetManager.ApplyCall(player);
-        pm.DisplayBet(BetManager.lastBetAmt, BetManager.BetType.Call);
+        if (BetManager.lastBetAmt <= player.CurBet)
+        {
+            PlayerCheck();
+            return;
+        }
+
+        BetManager.BetResult result = BetManager.ApplyCall(player);
+        if (result.AmountAdded <= 0)
+            return;
+
+        pm.DisplayBet(player.CurBet, result.IsAllIn ? BetManager.BetType.AllIn : BetManager.BetType.Call);
 
         MoveToNextPlayer();
     }
 
     public void PlayerCheck()
     {
+        if (BetManager.lastBetAmt > Players[curToAct].Player.CurBet)
+            return;
+
         Players[curToAct].DisplayCheck();
         MoveToNextPlayer();
     }
@@ -180,7 +209,7 @@ public class GameManager : MonoBehaviour
             Players.Add(PlayerSeats[i]);
         }
 
-        dealerIndex = Random.Range(0, Players.Count);
+        dealerIndex = UnityEngine.Random.Range(0, Players.Count);
         Players[dealerIndex].ToggleButton();
 
         StartCoroutine(StartRound());
@@ -293,19 +322,22 @@ public class GameManager : MonoBehaviour
 
         DealCurrentStreet();
 
-        curToAct = FindNextActivePlayer(smallBlindIndex - 1);
-        if (curToAct == -1)
-        {
-            if (ActivePlayerCount() > 1)
-                RunOutBoardAndEndRound();
-            else
-                EndRound();
-            return;
-        }
-
         if (ActivePlayerCount() == 1)
         {
             EndRound();
+            return;
+        }
+
+        if (ActionablePlayerCount() <= 1)
+        {
+            RunOutBoardAndEndRound();
+            return;
+        }
+
+        curToAct = FindNextActivePlayer(smallBlindIndex - 1);
+        if (curToAct == -1)
+        {
+            RunOutBoardAndEndRound();
             return;
         }
 
@@ -337,24 +369,76 @@ public class GameManager : MonoBehaviour
     {
         Players[curToAct].ToggleTurn(false);
 
+        if (ActivePlayerCount() <= 1)
+        {
+            EndRound();
+            return;
+        }
+
+        if (ActionablePlayerCount() <= 1)
+        {
+            RunOutBoardAndEndRound();
+            return;
+        }
+
         int nextIndex = FindNextActivePlayer(curToAct);
-        bool streetComplete = nextIndex == -1 || nextIndex == lastToAct;
+        bool streetComplete = IsStreetComplete(nextIndex);
 
         if (streetComplete)
         {
-            if (curStreet < 3 && ActivePlayerCount() > 1)
-            {
-                StartNextStreet();
-            }
-            else
-            {
-                EndRound();
-            }
+            AdvanceStreetOrEndRound();
+            return;
+        }
+
+        if (nextIndex == -1)
+        {
+            RunOutBoardAndEndRound();
             return;
         }
 
         curToAct = nextIndex;
         Players[curToAct].ToggleTurn(true);
+    }
+
+    private void AdvanceStreetOrEndRound()
+    {
+        if (curStreet < 3 && ActivePlayerCount() > 1)
+        {
+            if (ActionablePlayerCount() <= 1)
+                RunOutBoardAndEndRound();
+            else
+                StartNextStreet();
+        }
+        else
+        {
+            EndRound();
+        }
+    }
+
+    private bool IsStreetComplete(int nextIndex)
+    {
+        if (ActivePlayerCount() <= 1)
+            return true;
+
+        if (ActionablePlayerCount() == 0)
+            return true;
+
+        if (BetManager.lastBetAmt > 0 && AllActionablePlayersHaveMatchedCurrentBet())
+            return true;
+
+        return nextIndex == -1 || nextIndex == lastToAct;
+    }
+
+    private bool AllActionablePlayersHaveMatchedCurrentBet()
+    {
+        foreach (PlayerManager pm in Players)
+        {
+            Player player = pm.Player;
+            if (!player.HasFolded && player.ChipBalance > 0 && player.CurBet < BetManager.lastBetAmt)
+                return false;
+        }
+
+        return true;
     }
 
     private int FindNextActivePlayer(int startIndex)
@@ -379,6 +463,35 @@ public class GameManager : MonoBehaviour
         return n;
     }
 
+    private int ActionablePlayerCount()
+    {
+        int n = 0;
+        foreach (var pm in Players)
+            if (!pm.Player.HasFolded && pm.Player.ChipBalance > 0)
+                n++;
+        return n;
+    }
+
+    private bool CanBetOrRaise(Player player, int requestedTotalBet)
+    {
+        if (player.HasFolded || player.ChipBalance <= 0)
+            return false;
+
+        int maxTotalBet = player.CurBet + player.ChipBalance;
+        int targetTotalBet = Math.Min(requestedTotalBet, maxTotalBet);
+
+        if (targetTotalBet <= player.CurBet)
+            return false;
+
+        if (targetTotalBet <= BetManager.lastBetAmt)
+            return false;
+
+        int minimumRaiseTo = BetManager.GetMinimumRaiseTo();
+        bool isAllIn = targetTotalBet == maxTotalBet;
+
+        return targetTotalBet >= minimumRaiseTo || isAllIn;
+    }
+
     private IEnumerator StartRound()
     {
         handId++;
@@ -390,11 +503,25 @@ public class GameManager : MonoBehaviour
         curToAct = (dealerIndex + 3) % Players.Count;
         lastToAct = curToAct;
 
-        BetManager.PaySmallBlind(Players[smallBlindIndex].Player);
-        BetManager.PayBigBlind(Players[bigBlindIndex].Player);
-        Players[smallBlindIndex].DisplayBet(BetManager.GetSmallBlind(), BetManager.BetType.Blind);
-        Players[bigBlindIndex].DisplayBet(BetManager.GetBigBlind(), BetManager.BetType.Blind);
+        BetManager.BetResult smallBlindResult = BetManager.PaySmallBlind(Players[smallBlindIndex].Player);
+        BetManager.BetResult bigBlindResult = BetManager.PayBigBlind(Players[bigBlindIndex].Player);
+        Players[smallBlindIndex].DisplayBet(Players[smallBlindIndex].Player.CurBet, smallBlindResult.IsAllIn ? BetManager.BetType.AllIn : BetManager.BetType.Blind);
+        Players[bigBlindIndex].DisplayBet(Players[bigBlindIndex].Player.CurBet, bigBlindResult.IsAllIn ? BetManager.BetType.AllIn : BetManager.BetType.Blind);
 
+        if (ActivePlayerCount() == 1)
+        {
+            EndRound();
+            yield break;
+        }
+
+        if (ActionablePlayerCount() <= 1)
+        {
+            RunOutBoardAndEndRound();
+            yield break;
+        }
+
+        curToAct = FindNextActivePlayer(bigBlindIndex);
+        lastToAct = curToAct;
         Players[curToAct].ToggleTurn(true);
     }
 
