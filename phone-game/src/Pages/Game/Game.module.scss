@@ -124,6 +124,19 @@ html {
   font-weight: bold;
 }
 
+.leaveBtn {
+  margin-top: 1rem;
+  width: 100%;
+  background-color: transparent;
+  outline: none;
+  border: 1px solid var(--olive-muted);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-lg);
+  color: var(--gold-brand);
+  font-size: 0.95rem;
+  font-weight: bold;
+}
+
 .balanceWrapper {
   width: 100%;
   text-align: center;
