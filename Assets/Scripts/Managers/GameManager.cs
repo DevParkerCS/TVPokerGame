@@ -375,7 +375,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        if (ActionablePlayerCount() <= 1)
+        if (ActionablePlayerCount() == 0)
         {
             RunOutBoardAndEndRound();
             return;
@@ -514,7 +514,7 @@ public class GameManager : MonoBehaviour
             yield break;
         }
 
-        if (ActionablePlayerCount() <= 1)
+        if (ActionablePlayerCount() == 0 || AllActionablePlayersHaveMatchedCurrentBet())
         {
             RunOutBoardAndEndRound();
             yield break;
