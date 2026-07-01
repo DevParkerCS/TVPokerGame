@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static UnityEngine.EventSystems.EventTrigger;
 
 public class Pot
 {
@@ -26,57 +25,80 @@ public class Pot
     public Dictionary<string, int> PayoutWinners(SortedDictionary<int, List<PlayerManager>> winners)
     {
         Dictionary<string, int> payouts = new();
-        Dictionary<string, int> contributionsCpy = new(contributions);
+        List<int> contributionLevels = contributions.Values
+            .Where(v => v > 0)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToList();
+
         Debug.Log($"Total Contributions: {TotalAmt}");
 
-        foreach (var entry in winners)
+        int previousLevel = 0;
+        foreach (int level in contributionLevels)
         {
-            // Create a working copy of the current tied group
-            List<PlayerManager> tiedGroup = new(entry.Value);
+            int sidePot = GetSidePotAmount(previousLevel, level);
+            previousLevel = level;
 
-            // Pay them out in layers based on their minimum contribution
-            while (tiedGroup.Count > 0 && contributionsCpy.Values.Any(v => v > 0))
-            {
-                // Get the lowest remaining contribution from players in the group
-                int minEligible = tiedGroup.Min(p => contributionsCpy.ContainsKey(p.Player.ID) ? contributionsCpy[p.Player.ID] : 0);
-                if (minEligible == 0) break;
+            if (sidePot <= 0)
+                continue;
 
-                int sidePot = 0;
+            List<PlayerManager> eligibleWinners = GetBestEligibleWinners(winners, level);
+            if (eligibleWinners.Count == 0)
+                continue;
 
-                // Take minEligible from all contributors
-                foreach (var key in contributionsCpy.Keys.ToList())
-                {
-                    int available = contributionsCpy[key];
-                    int take = Math.Min(available, minEligible);
-                    contributionsCpy[key] -= take;
-                    sidePot += take;
-                }
-
-                // Distribute side pot to tied players
-                int share = sidePot / tiedGroup.Count;
-                int leftover = sidePot % tiedGroup.Count;
-
-                foreach (var player in tiedGroup)
-                {
-                    Debug.Log($"Player : {player.Player.PlayerName} Earned : {share}");
-                    PayoutPlayer(player.Player, share, payouts);
-                }
-
-                for (int i = 0; i < leftover; i++)
-                {
-                    var player = tiedGroup[i];
-                    PayoutPlayer(player.Player, 1, payouts);
-                }
-
-                // Remove players who have now received all they are eligible for
-                tiedGroup = tiedGroup
-                    .Where(p => contributionsCpy.ContainsKey(p.Player.ID) && contributionsCpy[p.Player.ID] > 0)
-                    .ToList();
-            }
+            PaySidePot(eligibleWinners, sidePot, payouts);
         }
 
         Reset();
         return payouts;
+    }
+
+    private int GetSidePotAmount(int previousLevel, int currentLevel)
+    {
+        int sidePot = 0;
+
+        foreach (int contribution in contributions.Values)
+        {
+            int cappedContribution = Math.Min(contribution, currentLevel);
+            int slice = cappedContribution - previousLevel;
+
+            if (slice > 0)
+                sidePot += slice;
+        }
+
+        return sidePot;
+    }
+
+    private List<PlayerManager> GetBestEligibleWinners(SortedDictionary<int, List<PlayerManager>> winners, int contributionLevel)
+    {
+        foreach (var entry in winners)
+        {
+            List<PlayerManager> eligible = entry.Value
+                .Where(pm => contributions.ContainsKey(pm.Player.ID) && contributions[pm.Player.ID] >= contributionLevel)
+                .ToList();
+
+            if (eligible.Count > 0)
+                return eligible;
+        }
+
+        return new List<PlayerManager>();
+    }
+
+    private void PaySidePot(List<PlayerManager> winners, int sidePot, Dictionary<string, int> payouts)
+    {
+        int share = sidePot / winners.Count;
+        int leftover = sidePot % winners.Count;
+
+        foreach (var winner in winners)
+        {
+            Debug.Log($"Player : {winner.Player.PlayerName} Earned : {share}");
+            PayoutPlayer(winner.Player, share, payouts);
+        }
+
+        for (int i = 0; i < leftover; i++)
+        {
+            PayoutPlayer(winners[i].Player, 1, payouts);
+        }
     }
 
     private void PayoutPlayer(Player player, int amount, Dictionary<string, int> payouts)
