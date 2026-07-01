@@ -74,9 +74,9 @@ export function registerPhone(ns: Namespace) {
           const playerJoined: PlayerJoinedPayload = {
             roomId,
             playerId,
-            name: game.players[playerId].name,
-            spriteCode: game.players[playerId].spriteCode,
-            color: game.players[playerId].color,
+            name: playerName,
+            spriteCode: payload.spriteCode,
+            color: payload.color,
             balance: STARTING_BALANCE,
           };
 
