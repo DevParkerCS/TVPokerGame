@@ -25,6 +25,24 @@ export type TurnStateType = {
   canRaise: boolean;
 };
 
+export type GameStateType = {
+  playerId: string;
+  balance: number;
+  lastBet: number;
+  isPlayerTurn: boolean;
+  curBB: number;
+  canPlayerRaise: boolean;
+};
+
+export const createEmptyGameState = (): GameStateType => ({
+  playerId: "",
+  balance: 0,
+  lastBet: 0,
+  curBB: 0,
+  isPlayerTurn: false,
+  canPlayerRaise: false,
+});
+
 export type SocketContextType = {
   gameState: GameStateType;
   setGameState: React.Dispatch<React.SetStateAction<GameStateType>>;
@@ -33,16 +51,8 @@ export type SocketContextType = {
   holeCards: CardPayload[];
   setHoleCards: React.Dispatch<React.SetStateAction<CardPayload[]>>;
   turnState: TurnStateType | null;
+  setTurnState: React.Dispatch<React.SetStateAction<TurnStateType | null>>;
   socket: Socket;
-};
-
-export type GameStateType = {
-  playerId: string;
-  balance: number;
-  lastBet: number;
-  isPlayerTurn: boolean;
-  curBB: number;
-  canPlayerRaise: boolean;
 };
 
 export const SocketContext = createContext<SocketContextType | undefined>(
@@ -70,14 +80,7 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
   const [roomId, setRoomId] = useState("");
   const [holeCards, setHoleCards] = useState<CardPayload[]>([]);
   const [turnState, setTurnState] = useState<TurnStateType | null>(null);
-  const [gameState, setGameState] = useState<GameStateType>({
-    playerId: "",
-    balance: 0,
-    lastBet: 0,
-    curBB: 0,
-    isPlayerTurn: false,
-    canPlayerRaise: false,
-  });
+  const [gameState, setGameState] = useState<GameStateType>(createEmptyGameState());
 
   useEffect(() => {
     const onConnect = () => console.log("Connected", socket.id);
@@ -153,6 +156,7 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
     setGameState,
     setRoomId,
     setHoleCards,
+    setTurnState,
   };
 
   return (
