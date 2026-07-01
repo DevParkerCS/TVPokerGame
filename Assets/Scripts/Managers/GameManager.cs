@@ -375,7 +375,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        if (ActionablePlayerCount() == 0)
+        if (ActionablePlayerCount() == 0 || ShouldRunOutBecauseNoMoreBettingIsPossible())
         {
             RunOutBoardAndEndRound();
             return;
@@ -423,10 +423,15 @@ public class GameManager : MonoBehaviour
         if (ActionablePlayerCount() == 0)
             return true;
 
-        if (BetManager.lastBetAmt > 0 && AllActionablePlayersHaveMatchedCurrentBet())
+        if (nextIndex == -1)
             return true;
 
-        return nextIndex == -1 || nextIndex == lastToAct;
+        return nextIndex == lastToAct && AllActionablePlayersHaveMatchedCurrentBet();
+    }
+
+    private bool ShouldRunOutBecauseNoMoreBettingIsPossible()
+    {
+        return ActionablePlayerCount() <= 1 && AllActionablePlayersHaveMatchedCurrentBet();
     }
 
     private bool AllActionablePlayersHaveMatchedCurrentBet()
@@ -514,7 +519,7 @@ public class GameManager : MonoBehaviour
             yield break;
         }
 
-        if (ActionablePlayerCount() == 0 || AllActionablePlayersHaveMatchedCurrentBet())
+        if (ActionablePlayerCount() == 0 || ShouldRunOutBecauseNoMoreBettingIsPossible())
         {
             RunOutBoardAndEndRound();
             yield break;
