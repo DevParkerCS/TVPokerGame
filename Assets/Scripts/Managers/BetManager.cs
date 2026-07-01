@@ -58,7 +58,7 @@ public static class BetManager
         int previousCurrentBet = lastBetAmt;
         int previousPlayerBet = player.CurBet;
         int maxTotalBet = player.CurBet + player.ChipBalance;
-        int targetTotalBet = Math.Clamp(requestedTotalBet, player.CurBet, maxTotalBet);
+        int targetTotalBet = Clamp(requestedTotalBet, player.CurBet, maxTotalBet);
         int minimumRaiseTo = GetMinimumRaiseTo();
 
         player.Bet(targetTotalBet);
@@ -155,5 +155,12 @@ public static class BetManager
             IsFullRaise = isFullRaise,
             IsShortAllIn = isAllIn && increasedCurrentBet && !isFullRaise
         };
+    }
+
+    private static int Clamp(int value, int min, int max)
+    {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
     }
 }
