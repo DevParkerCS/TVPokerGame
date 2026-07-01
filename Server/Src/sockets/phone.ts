@@ -99,6 +99,13 @@ export function registerPhone(ns: Namespace) {
             cards: game.players[playerId].cards.map(toCardPayload),
           });
         }
+
+        if (isReconnect) {
+          ns.server.of("/tv").to(roomId).emit("request-phone-state-sync", {
+            roomId,
+            playerId,
+          });
+        }
       } catch (e) {
         ack({ ok: false, error: String(e) });
       }
