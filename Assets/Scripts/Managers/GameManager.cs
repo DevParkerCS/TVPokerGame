@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,6 +31,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private PotManager potManager;
     [SerializeField] private ShowdownManager showdownManager;
     [SerializeField] private SocketManager socketManager;
+    [SerializeField] private TMP_Text streetText;
+    [SerializeField] private TMP_Text statusText;
     [SerializeField] private bool useTestPlayers = false;
     [SerializeField] private float handEndDelaySeconds = 5f;
     #endregion
@@ -56,6 +59,9 @@ public class GameManager : MonoBehaviour
                 PlayersData.Add(player);
             }
         }
+
+        SetStreetText("WAITING");
+        UpdateWaitingForPlayersStatus();
     }
 
     public void AddRemotePlayer(RemotePlayerPayload payload)
@@ -67,11 +73,15 @@ public class GameManager : MonoBehaviour
         }
 
         if (PlayersData.Any(p => p.ID == payload.playerId))
+        {
+            UpdateWaitingForPlayersStatus();
             return;
+        }
 
         if (PlayersData.Count >= PlayerSeats.Count)
         {
             Debug.LogWarning("Table is full.");
+            UpdateWaitingForPlayersStatus();
             return;
         }
 
@@ -81,6 +91,7 @@ public class GameManager : MonoBehaviour
         PlayersData.Add(player);
 
         Debug.Log($"Remote player joined: {payload.name} ({payload.playerId})");
+        UpdateWaitingForPlayersStatus();
     }
 
     public void HandleRemotePlayerAction(string playerId, string action, int amount)
@@ -193,11 +204,13 @@ public class GameManager : MonoBehaviour
         if (PlayersData.Count < 2)
         {
             Debug.LogWarning("Need at least 2 players to start.");
+            SetStatusText($"Need at least 2 players — {BuildPlayerCountText()}");
             return;
         }
 
         startGameBtn.gameObject.SetActive(false);
         isGameStarted = true;
+        SetStatusText("Starting hand...");
         Util.Shuffle(PlayersData);
         Players.Clear();
 
@@ -222,6 +235,7 @@ public class GameManager : MonoBehaviour
             return;
 
         isEndingRound = true;
+        SetStreetText("SHOWDOWN");
         ClearTurnIndicators();
         potManager.AddAllBetsToPot(Players);
 
@@ -241,13 +255,21 @@ public class GameManager : MonoBehaviour
 
         Dictionary<string, int> payouts = potManager.GetWinnersPayout(winners);
         DisplayPayouts(winners, payouts);
-        SendHandEndedToPhones(payouts);
+        string handEndedMessage = BuildHandEndedMessage(payouts);
+        SetStatusText(handEndedMessage);
+        SendHandEndedToPhones(handEndedMessage);
         StartCoroutine(ResetAndStartNextHandAfterDelay());
     }
 
     private IEnumerator ResetAndStartNextHandAfterDelay()
     {
-        yield return new WaitForSeconds(handEndDelaySeconds);
+        int countdownSeconds = Mathf.CeilToInt(handEndDelaySeconds);
+        for (int remaining = countdownSeconds; remaining > 0; remaining--)
+        {
+            SetStatusText($"Next hand starting in {remaining}");
+            yield return new WaitForSeconds(1f);
+        }
+
         ResetForNextHand();
         isEndingRound = false;
         StartCoroutine(StartRound());
@@ -261,12 +283,12 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void SendHandEndedToPhones(Dictionary<string, int> payouts)
+    private void SendHandEndedToPhones(string message)
     {
         if (socketManager == null)
             return;
 
-        socketManager.SendHandLifecycleToPhones("hand-ended", handId, BuildHandEndedMessage(payouts));
+        socketManager.SendHandLifecycleToPhones("hand-ended", handId, message);
     }
 
     private string BuildHandEndedMessage(Dictionary<string, int> payouts)
@@ -280,16 +302,16 @@ public class GameManager : MonoBehaviour
 
             PlayerManager winner = Players.FirstOrDefault(pm => pm.Player.ID == payout.Key);
             string winnerName = winner != null ? winner.Player.PlayerName : payout.Key;
-            winnerSummaries.Add($"{winnerName} won ${payout.Value}");
+            winnerSummaries.Add($"{winnerName} wins ${payout.Value}");
         }
 
         if (winnerSummaries.Count == 0)
             return "Hand complete";
 
         if (winnerSummaries.Count == 1)
-            return $"Hand complete — {winnerSummaries[0]}";
+            return winnerSummaries[0];
 
-        return $"Hand complete — {string.Join(", ", winnerSummaries)}";
+        return $"Split pot: {string.Join(", ", winnerSummaries)}";
     }
 
     private void ResetForNextHand()
@@ -321,6 +343,7 @@ public class GameManager : MonoBehaviour
         }
 
         DealCurrentStreet();
+        SetStatusText(string.Empty);
 
         if (ActivePlayerCount() == 1)
         {
@@ -353,10 +376,13 @@ public class GameManager : MonoBehaviour
             case 2: cardManager.DealTurn(); break;
             case 3: cardManager.DealRiver(); break;
         }
+
+        UpdateStreetText();
     }
 
     private void RunOutBoardAndEndRound()
     {
+        SetStatusText("All remaining action complete — running board");
         while (curStreet < 3)
         {
             curStreet++;
@@ -501,6 +527,8 @@ public class GameManager : MonoBehaviour
     {
         handId++;
         curStreet = 0;
+        SetStreetText("PREFLOP");
+        SetStatusText("Dealing cards...");
         yield return StartCoroutine(cardManager.DealCards());
         SendHoleCardsToPhones();
         smallBlindIndex = (dealerIndex + 1) % Players.Count;
@@ -512,6 +540,7 @@ public class GameManager : MonoBehaviour
         BetManager.BetResult bigBlindResult = BetManager.PayBigBlind(Players[bigBlindIndex].Player);
         Players[smallBlindIndex].DisplayBet(Players[smallBlindIndex].Player.CurBet, smallBlindResult.IsAllIn ? BetManager.BetType.AllIn : BetManager.BetType.Blind);
         Players[bigBlindIndex].DisplayBet(Players[bigBlindIndex].Player.CurBet, bigBlindResult.IsAllIn ? BetManager.BetType.AllIn : BetManager.BetType.Blind);
+        SetStatusText(string.Empty);
 
         if (ActivePlayerCount() == 1)
         {
@@ -563,5 +592,44 @@ public class GameManager : MonoBehaviour
                 pm.UpdatePlayerBalance();
             }
         }
+    }
+
+    private void UpdateWaitingForPlayersStatus()
+    {
+        SetStatusText(BuildPlayerCountText());
+    }
+
+    private string BuildPlayerCountText()
+    {
+        return $"{PlayersData.Count}/{MaxPlayerCount()} players joined";
+    }
+
+    private int MaxPlayerCount()
+    {
+        return PlayerSeats != null && PlayerSeats.Count > 0 ? PlayerSeats.Count : 10;
+    }
+
+    private void UpdateStreetText()
+    {
+        switch (curStreet)
+        {
+            case 0: SetStreetText("PREFLOP"); break;
+            case 1: SetStreetText("FLOP"); break;
+            case 2: SetStreetText("TURN"); break;
+            case 3: SetStreetText("RIVER"); break;
+            default: SetStreetText("SHOWDOWN"); break;
+        }
+    }
+
+    private void SetStreetText(string value)
+    {
+        if (streetText != null)
+            streetText.text = value;
+    }
+
+    private void SetStatusText(string value)
+    {
+        if (statusText != null)
+            statusText.text = value;
     }
 }
