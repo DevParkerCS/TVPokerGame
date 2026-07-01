@@ -6,6 +6,7 @@ using SocketIOClient.Transport;
 using SocketIOClient.Newtonsoft.Json;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.NetworkInformation;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -125,12 +126,168 @@ public class SocketManager : MonoBehaviour
         await TryCreateRoom();
     }
 
-    string GetLocalIPv4()
+    private string GetLocalIPv4()
     {
-        return Dns.GetHostEntry(Dns.GetHostName())
-                  .AddressList
-                  .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)?
-                  .ToString() ?? "localhost";
+        try
+        {
+            string interfaceAddress = GetBestNetworkInterfaceIPv4();
+            if (!string.IsNullOrEmpty(interfaceAddress))
+                return interfaceAddress;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"Could not scan network interfaces for phone URL IP: {ex.Message}");
+        }
+
+        try
+        {
+            IPAddress fallback = Dns.GetHostEntry(Dns.GetHostName())
+                .AddressList
+                .FirstOrDefault(IsUsableLocalIPv4);
+
+            if (fallback != null)
+                return fallback.ToString();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"Could not use DNS fallback for phone URL IP: {ex.Message}");
+        }
+
+        return "localhost";
+    }
+
+    private string GetBestNetworkInterfaceIPv4()
+    {
+        List<NetworkInterface> interfaces = NetworkInterface.GetAllNetworkInterfaces()
+            .Where(IsUsableNetworkInterface)
+            .OrderBy(InterfacePriority)
+            .ToList();
+
+        foreach (NetworkInterface networkInterface in interfaces.Where(HasGateway))
+        {
+            string address = GetFirstAddress(networkInterface, true);
+            if (!string.IsNullOrEmpty(address))
+                return address;
+        }
+
+        foreach (NetworkInterface networkInterface in interfaces)
+        {
+            string address = GetFirstAddress(networkInterface, true);
+            if (!string.IsNullOrEmpty(address))
+                return address;
+        }
+
+        foreach (NetworkInterface networkInterface in interfaces)
+        {
+            string address = GetFirstAddress(networkInterface, false);
+            if (!string.IsNullOrEmpty(address))
+                return address;
+        }
+
+        return string.Empty;
+    }
+
+    private bool IsUsableNetworkInterface(NetworkInterface networkInterface)
+    {
+        if (networkInterface == null)
+            return false;
+
+        if (networkInterface.OperationalStatus != OperationalStatus.Up)
+            return false;
+
+        if (networkInterface.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
+            networkInterface.NetworkInterfaceType == NetworkInterfaceType.Tunnel)
+            return false;
+
+        string name = (networkInterface.Name ?? string.Empty).ToLowerInvariant();
+        string description = (networkInterface.Description ?? string.Empty).ToLowerInvariant();
+        string combined = name + " " + description;
+
+        return !combined.Contains("virtual") &&
+               !combined.Contains("vmware") &&
+               !combined.Contains("virtualbox") &&
+               !combined.Contains("hyper-v") &&
+               !combined.Contains("wsl") &&
+               !combined.Contains("docker") &&
+               !combined.Contains("bluetooth");
+    }
+
+    private int InterfacePriority(NetworkInterface networkInterface)
+    {
+        switch (networkInterface.NetworkInterfaceType)
+        {
+            case NetworkInterfaceType.Wireless80211:
+                return 0;
+            case NetworkInterfaceType.Ethernet:
+                return 1;
+            case NetworkInterfaceType.GigabitEthernet:
+                return 2;
+            default:
+                return 3;
+        }
+    }
+
+    private bool HasGateway(NetworkInterface networkInterface)
+    {
+        try
+        {
+            return networkInterface.GetIPProperties()
+                .GatewayAddresses
+                .Any(g => g?.Address != null && g.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(g.Address));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private string GetFirstAddress(NetworkInterface networkInterface, bool privateOnly)
+    {
+        foreach (UnicastIPAddressInformation unicast in networkInterface.GetIPProperties().UnicastAddresses)
+        {
+            IPAddress address = unicast.Address;
+            if (!IsUsableLocalIPv4(address))
+                continue;
+
+            if (privateOnly && !IsPrivateIPv4(address))
+                continue;
+
+            return address.ToString();
+        }
+
+        return string.Empty;
+    }
+
+    private bool IsUsableLocalIPv4(IPAddress address)
+    {
+        if (address == null || address.AddressFamily != AddressFamily.InterNetwork)
+            return false;
+
+        byte[] bytes = address.GetAddressBytes();
+
+        if (IPAddress.IsLoopback(address))
+            return false;
+
+        if (bytes[0] == 0 || bytes[0] == 127)
+            return false;
+
+        // 169.254.x.x is link-local/APIPA and usually means the adapter did not get a real router IP.
+        if (bytes[0] == 169 && bytes[1] == 254)
+            return false;
+
+        if (bytes[0] >= 224)
+            return false;
+
+        return true;
+    }
+
+    private bool IsPrivateIPv4(IPAddress address)
+    {
+        byte[] bytes = address.GetAddressBytes();
+
+        return bytes[0] == 10 ||
+               (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
+               (bytes[0] == 192 && bytes[1] == 168);
     }
 
     private async Task<bool> Connect()
