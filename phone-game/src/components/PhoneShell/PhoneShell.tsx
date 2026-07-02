@@ -1,11 +1,12 @@
+import type { ReactNode } from "react";
 import styles from "./PhoneShell.module.scss";
 
 type PhoneShellProps = {
   eyebrow?: string;
   title: string;
   subtitle?: string;
-  children: React.ReactNode;
-  footer?: React.ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
   variant?: "join" | "game";
 };
 
