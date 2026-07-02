@@ -1,10 +1,11 @@
+import type { Dispatch, SetStateAction } from "react";
 import styles from "./Avatars.module.scss";
 import { avatarImgs } from "../../../../assets/avatars";
 import { PlayerInfo } from "../../PlayerInfo";
 
 type AvatarsProps = {
-  setPlayerInfo: React.Dispatch<React.SetStateAction<PlayerInfo>>;
-  setSelectedIndex: React.Dispatch<React.SetStateAction<number>>;
+  setPlayerInfo: Dispatch<SetStateAction<PlayerInfo>>;
+  setSelectedIndex: Dispatch<SetStateAction<number>>;
   selectedIndex: number;
 };
 
