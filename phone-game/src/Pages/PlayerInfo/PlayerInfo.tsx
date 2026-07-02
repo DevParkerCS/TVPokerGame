@@ -6,6 +6,8 @@ import { Avatars } from "./components/Avatars/Avatars";
 import { ColorPicker } from "./components/ColorPicker/ColorPicker";
 import { JoinRoom } from "../../util/SocketUtil";
 import { savePlayerSession } from "../../util/PlayerSessionStorage";
+import { PhoneShell } from "../../components/PhoneShell/PhoneShell";
+import { ActionButton } from "../../components/ActionButton/ActionButton";
 
 const GAME_ALREADY_STARTED_ERROR = "Game has already started";
 
@@ -34,6 +36,12 @@ export const PlayerInfo = () => {
     color: { r: 0, g: 168, b: 132 },
   });
   const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  const isAvatarStep = stepIndex === 0;
+  const title = isAvatarStep ? "Pick your table vibe" : "Lock in your seat";
+  const subtitle = isAvatarStep
+    ? "Choose an avatar that will show up on the TV table. Big personality encouraged."
+    : "Choose your color, enter your name, then punch in the room code from the TV.";
 
   const handleClick = async () => {
     setError("");
@@ -77,61 +85,69 @@ export const PlayerInfo = () => {
     }
   };
 
-  return (
-    <div className={styles.contentWrapper}>
-      <div className={styles.txtWrapper}>
-        <h1 className={styles.joinTitle}>Join TV Poker</h1>
-        <p className={styles.playersTxt}>Enter the room code shown on the TV.</p>
-      </div>
-
-      {stepIndex === 0 && (
-        <div className={styles.chooseAvatarWrapper}>
-          <h2 className={styles.avatarTitle}>Choose Avatar</h2>
-          <Avatars
-            setPlayerInfo={setPlayerInfo}
-            selectedIndex={selectedIndex}
-            setSelectedIndex={setSelectedIndex}
-          />
-        </div>
+  const footer = (
+    <div className={styles.footerActions}>
+      {!isAvatarStep && (
+        <ActionButton variant="ghost" onClick={() => setStepIndex(stepIndex - 1)}>
+          Back
+        </ActionButton>
       )}
-
-      {stepIndex === 1 && (
-        <>
-          <ColorPicker setPlayerInfo={setPlayerInfo} playerInfo={playerInfo} />
-          <div className={styles.inputWrapper}>
-            <label className={styles.inputLabel} htmlFor="room-input">
-              Room Code:
-            </label>
-            <input
-              className={styles.nameInput}
-              value={playerInfo.roomId}
-              onChange={(e) =>
-                setPlayerInfo({
-                  ...playerInfo,
-                  roomId: e.target.value.toUpperCase(),
-                })
-              }
-              id="room-input"
-            />
-          </div>
-        </>
-      )}
-
-      {error && <p className={styles.playersTxt}>{error}</p>}
-
-      <div className={styles.btnsWrapper}>
-        {stepIndex === 1 && (
-          <button
-            className={styles.continueBtn}
-            onClick={() => setStepIndex(stepIndex - 1)}
-          >
-            Previous
-          </button>
-        )}
-        <button className={styles.continueBtn} onClick={handleClick}>
-          {stepIndex === 1 ? "Join" : "Continue"}
-        </button>
-      </div>
+      <ActionButton fullWidth={isAvatarStep} onClick={handleClick}>
+        {isAvatarStep ? "Choose Avatar" : "Join Table"}
+      </ActionButton>
     </div>
+  );
+
+  return (
+    <PhoneShell title={title} subtitle={subtitle} footer={footer}>
+      <div className={styles.joinContent}>
+        <div className={styles.progressRail} aria-label="Join progress">
+          <span className={styles.activeDot}>Avatar</span>
+          <span className={!isAvatarStep ? styles.activeDot : ""}>Seat</span>
+        </div>
+
+        {isAvatarStep ? (
+          <section className={styles.panel}>
+            <div className={styles.sectionHeader}>
+              <p>Step 1</p>
+              <h2>Choose your character</h2>
+            </div>
+            <Avatars
+              setPlayerInfo={setPlayerInfo}
+              selectedIndex={selectedIndex}
+              setSelectedIndex={setSelectedIndex}
+            />
+          </section>
+        ) : (
+          <section className={styles.panel}>
+            <div className={styles.sectionHeader}>
+              <p>Step 2</p>
+              <h2>Make it yours</h2>
+            </div>
+            <ColorPicker setPlayerInfo={setPlayerInfo} playerInfo={playerInfo} />
+            <div className={styles.roomCard}>
+              <label className={styles.inputLabel} htmlFor="room-input">
+                Room code
+              </label>
+              <input
+                className={styles.nameInput}
+                value={playerInfo.roomId}
+                placeholder="ABC123"
+                autoCapitalize="characters"
+                onChange={(e) =>
+                  setPlayerInfo({
+                    ...playerInfo,
+                    roomId: e.target.value.toUpperCase(),
+                  })
+                }
+                id="room-input"
+              />
+            </div>
+          </section>
+        )}
+
+        {error && <p className={styles.errorText}>{error}</p>}
+      </div>
+    </PhoneShell>
   );
 };
