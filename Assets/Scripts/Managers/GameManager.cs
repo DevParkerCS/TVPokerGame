@@ -278,6 +278,7 @@ public class GameManager : MonoBehaviour
 
         Dictionary<string, int> payouts = potManager.GetWinnersPayout(winners);
         DisplayPayouts(winners, payouts);
+        SyncPlayerBalancesToServer();
         string handEndedMessage = BuildHandEndedMessage(payouts);
 
         PlayerManager gameWinner = GetGameWinnerIfComplete();
@@ -328,6 +329,14 @@ public class GameManager : MonoBehaviour
         {
             pm.ToggleTurn(false);
         }
+    }
+
+    private void SyncPlayerBalancesToServer()
+    {
+        if (socketManager == null)
+            return;
+
+        socketManager.SendPlayerBalancesToServer(PlayerSeats);
     }
 
     private void SendHandEndedToPhones(string message)
