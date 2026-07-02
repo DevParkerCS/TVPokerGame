@@ -16,6 +16,11 @@ function cleanRoomId(roomId: string): string {
 
 const lifecycleEvents = new Set(["hand-reset", "hand-started", "hand-ended"]);
 
+function isGameOverMessage(message: string | undefined): boolean {
+  const normalized = (message || "").toLowerCase();
+  return normalized.includes("wins the game") || normalized === "game over";
+}
+
 // Tv Socket Events
 export function registerTV(ns: Namespace) {
   ns.on("connection", (socket) => {
@@ -144,6 +149,10 @@ export function registerTV(ns: Namespace) {
             player.curBet = 0;
             player.hasFolded = false;
           }
+        }
+
+        if (event === "hand-ended" && isGameOverMessage(payload.message)) {
+          game.isStarted = false;
         }
 
         ns.server.of("/phone").to(roomId).emit(event, {
