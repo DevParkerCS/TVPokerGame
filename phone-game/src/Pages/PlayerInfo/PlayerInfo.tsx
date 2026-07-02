@@ -7,6 +7,8 @@ import { ColorPicker } from "./components/ColorPicker/ColorPicker";
 import { JoinRoom } from "../../util/SocketUtil";
 import { savePlayerSession } from "../../util/PlayerSessionStorage";
 
+const GAME_ALREADY_STARTED_ERROR = "Game has already started";
+
 export type PlayerInfo = {
   roomId: string;
   name: string;
@@ -61,7 +63,12 @@ export const PlayerInfo = () => {
             });
             navigate("/game");
           } catch (e) {
-            setError("Could not join room. Check the code and try again.");
+            const message = e instanceof Error ? e.message : "";
+            if (message === GAME_ALREADY_STARTED_ERROR) {
+              setError("This game has already started. Wait for the next game to join.");
+            } else {
+              setError("Could not join room. Check the code and try again.");
+            }
           }
         } else {
           setError("Enter your name and the room code from the TV.");
