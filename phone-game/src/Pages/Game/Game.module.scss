@@ -3,7 +3,7 @@
 .gameContent {
   display: flex;
   flex-direction: column;
-  gap: clamp(14px, 2.4vw, 22px);
+  gap: 8px;
   flex: 1;
   min-height: 0;
 }
@@ -11,11 +11,12 @@
 .tableGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: clamp(14px, 2.4vw, 22px);
+  gap: 8px;
   align-items: start;
 
   @include respond(md) {
     grid-template-columns: minmax(340px, 1.05fr) minmax(330px, 0.95fr);
+    gap: clamp(14px, 2.4vw, 22px);
   }
 }
 
@@ -25,6 +26,8 @@
 
   button {
     width: 100%;
+    min-height: 38px;
+    padding-block: 0.5rem;
   }
 
   @include respond(sm) {
@@ -33,6 +36,14 @@
     button {
       width: auto;
       min-width: 180px;
+      min-height: 48px;
+      padding-block: 0.82rem;
     }
+  }
+}
+
+@include respond(sm) {
+  .gameContent {
+    gap: clamp(14px, 2.4vw, 22px);
   }
 }
