@@ -1,152 +1,38 @@
-:root {
-  /* Palette from the chosen mockup */
-  --green-deep: #103722;
-  --green-surface: #0e341f;
-  --green-surface-2: #01240e;
-  --olive-muted: #596451;
+@use "../../styles/mixins" as *;
 
-  --gold-brand: #e6cd89;
-  --gold-btn: #eab25a;
-  --gold-btn-mid: #eea74c;
-  --gold-btn-shadow: #cfa455;
-  --gold-spark: #f4df54;
-
-  --copper-1: #997339;
-  --copper-2: #c17c63;
-  --copper-3: #b57c59;
-
-  --card-face: #f3f1ee;
-  --card-face-glint: #fdffff;
-  --pip-dark: #15281a;
-  --pip-red: #b22c28;
-
-  --shadow-900: rgba(0, 0, 0, 0.55);
-  --shadow-700: rgba(0, 0, 0, 0.35);
-
-  --radius-xl: 24px;
-  --radius-lg: 18px;
-  --radius-md: 12px;
-
-  --gap: 16px;
-}
-
-* {
-  margin: 0;
-  box-sizing: border-box;
-}
-
-html {
-  background-color: var(--green-deep);
-}
-
-.gameWrapper {
-  background-color: var(--green-surface);
-  border: 3px solid var(--gold-btn-mid);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 0 20px inset var(--shadow-900);
-  overflow: hidden;
-  width: fit-content;
-  padding: 1.5rem;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  max-width: 90vw;
-}
-
-.title {
-  font-size: 2rem;
-  text-align: center;
-  color: #eab25a;
-  text-shadow: 0px 0px 2px gold;
-}
-
-.cardsTray {
+.gameContent {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin-top: 1rem;
+  gap: clamp(14px, 2.4vw, 22px);
+  flex: 1;
+  min-height: 0;
 }
 
-.cardsWrapper {
-  background: var(--green-surface-2);
-  border-radius: var(--radius-lg);
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  align-items: center;
-  min-height: 132px;
-  width: fit-content;
-  min-width: 200px;
-  padding: 0.75rem 1rem;
-  border: 4px solid #033719;
-  box-shadow: 0 0 5px black;
-}
+.tableGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(14px, 2.4vw, 22px);
+  align-items: start;
 
-.cardWrapper {
-  border-radius: 10px;
-  overflow: hidden;
-
-  .cardImg {
-    width: 80px;
+  @include respond(md) {
+    grid-template-columns: minmax(340px, 1.05fr) minmax(330px, 0.95fr);
   }
 }
 
-.cardFallback {
-  width: 80px;
-  height: 112px;
-  border-radius: 10px;
-  background: var(--card-face);
-  color: var(--pip-dark);
-  display: grid;
-  place-items: center;
-  font-size: 1.75rem;
-  font-weight: bold;
-  border: 2px solid var(--gold-btn-mid);
-}
+.footerActions {
+  display: flex;
+  justify-content: stretch;
 
-.waitingTxt {
-  color: var(--gold-brand);
-  text-align: center;
-  max-width: 180px;
-}
+  button {
+    width: 100%;
+  }
 
-.showBtn {
-  margin-top: 1.25rem;
-  background-color: var(--green-surface);
-  outline: none;
-  border: none;
-  padding: 0.5rem 1rem;
-  box-shadow: 0 0 5px black;
-  border-radius: var(--radius-lg);
-  color: var(--gold-brand);
-  font-size: 1.1rem;
-  font-weight: bold;
-}
+  @include respond(sm) {
+    justify-content: flex-end;
 
-.leaveBtn {
-  margin-top: 1rem;
-  width: 100%;
-  background-color: transparent;
-  outline: none;
-  border: 1px solid var(--olive-muted);
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-lg);
-  color: var(--gold-brand);
-  font-size: 0.95rem;
-  font-weight: bold;
-}
-
-.balanceWrapper {
-  width: 100%;
-  text-align: center;
-  color: var(--gold-brand);
-  font-family: sans-serif;
-  font-weight: 500;
-  font-size: 1.5rem;
-  margin-top: 1.5rem;
-
-  .balanceTitle {
-    margin-bottom: 0.5rem;
+    button {
+      width: auto;
+      min-width: 180px;
+    }
   }
 }
