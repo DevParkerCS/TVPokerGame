@@ -67,6 +67,23 @@ export type HoleCardsPayload = {
   cards: CardPayload[];
 };
 
+export type PlayerBalancePayload = {
+  playerId: string;
+  balance: number;
+  totalBet: number;
+  curBet: number;
+  hasFolded: boolean;
+};
+
+export type PlayerBalancesPayload = {
+  roomId: string;
+  players: PlayerBalancePayload[];
+};
+
+export type BalanceSyncPayload = {
+  balance: number;
+};
+
 export type PhoneHandLifecycleEvent = "hand-reset" | "hand-started" | "hand-ended";
 
 export type PhoneHandLifecyclePayload = {
