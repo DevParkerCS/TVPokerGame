@@ -3,37 +3,67 @@
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(10px, 2vw, 16px);
+  grid-template-columns: 1.25fr 0.9fr 0.9fr;
+  gap: 6px;
 
   @include respond(sm) {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(10px, 2vw, 16px);
   }
 }
 
 .statCard,
 .roomCard {
-  @include glass-panel(var(--radius-lg));
-  min-height: 92px;
+  @include glass-panel(var(--radius-md));
+  min-height: 54px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 0.8rem;
-  padding: clamp(12px, 2vw, 18px);
+  justify-content: center;
+  gap: 0.24rem;
+  padding: 0.55rem 0.65rem;
 
   span {
     color: rgba(255, 249, 233, 0.62);
-    font-size: 0.72rem;
+    font-size: 0.58rem;
     font-weight: 900;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
   strong {
     color: var(--cream-100);
     font-family: $font-display;
-    font-size: clamp(1.05rem, 3vw, 1.55rem);
+    font-size: clamp(0.82rem, 3.4vw, 1.05rem);
     line-height: 1.02;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  @include respond(sm) {
+    min-height: 92px;
+    justify-content: space-between;
+    gap: 0.8rem;
+    padding: clamp(12px, 2vw, 18px);
+    border-radius: var(--radius-lg);
+
+    span {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+    }
+
+    strong {
+      font-size: clamp(1.05rem, 3vw, 1.55rem);
+      white-space: normal;
+    }
+  }
+}
+
+.statCard:nth-of-type(4) {
+  display: none;
+
+  @include respond(sm) {
+    display: flex;
   }
 }
 
@@ -45,6 +75,7 @@
 }
 
 .roomCard {
+  display: none;
   grid-column: 1 / -1;
   min-height: auto;
   flex-direction: row;
@@ -55,6 +86,7 @@
   }
 
   @include respond(sm) {
+    display: flex;
     grid-column: auto;
   }
 }
