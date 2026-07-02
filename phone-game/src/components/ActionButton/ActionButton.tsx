@@ -1,6 +1,7 @@
+import type { ButtonHTMLAttributes } from "react";
 import styles from "./ActionButton.module.scss";
 
-type ActionButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "danger" | "ghost";
   fullWidth?: boolean;
 };
