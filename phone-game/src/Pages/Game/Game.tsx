@@ -147,6 +147,7 @@ export const Game = () => {
   useEffect(() => {
     const onHandEnded = (payload?: { message?: string }) => {
       setActionLocked(false);
+      setCardsShown(false);
       setStatus(payload?.message || "Hand complete");
     };
     const onHandReset = (payload?: { message?: string }) => {
