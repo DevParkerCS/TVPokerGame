@@ -134,6 +134,18 @@ export function registerTV(ns: Namespace) {
           return;
         }
 
+        if (event === "hand-reset") {
+          game.pot.potAmt = 0;
+          game.lastBetAmt = 0;
+
+          for (const player of Object.values(game.players)) {
+            player.cards = [];
+            player.totalBet = 0;
+            player.curBet = 0;
+            player.hasFolded = false;
+          }
+        }
+
         ns.server.of("/phone").to(roomId).emit(event, {
           handId: payload.handId,
           message: payload.message || "",
