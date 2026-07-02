@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TurnStateType } from "../../../../Context/SocketContext";
 import { PlayerActionType } from "../../../../types/Types";
+import { ActionButton } from "../../../../components/ActionButton/ActionButton";
 import styles from "./Actions.module.scss";
 
 type ActionsProps = {
@@ -34,28 +35,36 @@ export const Actions = ({ onAction, turnState, locked = false }: ActionsProps) =
   };
 
   const amountAction: PlayerActionType = turnState?.canBet ? "bet" : "raise";
-  const amountLabel = turnState?.canBet ? "BET" : "RAISE TO";
+  const amountLabel = turnState?.canBet ? "Bet" : "Raise to";
 
   return (
-    <div className={styles.actionsWrapper}>
+    <section className={styles.actionsWrapper}>
+      <div className={styles.actionsHeader}>
+        <p>Controls</p>
+        <h2>{turnState?.isPlayerTurn ? "Make your move" : "Waiting"}</h2>
+      </div>
+
       <div className={styles.mainActions}>
-        <button className={styles.actionBtn} disabled={!isTurn || !turnState?.canFold} onClick={() => onAction("fold")}>
-          FOLD
-        </button>
-        <button className={styles.actionBtn} disabled={!isTurn || !turnState?.canCheck} onClick={() => onAction("check")}>
-          CHECK
-        </button>
-        <button className={styles.actionBtn} disabled={!isTurn || !turnState?.canCall} onClick={() => onAction("call")}>
-          {turnState?.amountToCall ? `CALL $${turnState.amountToCall}` : "CALL"}
-        </button>
+        <ActionButton variant="danger" disabled={!isTurn || !turnState?.canFold} onClick={() => onAction("fold")}>
+          Fold
+        </ActionButton>
+        <ActionButton variant="secondary" disabled={!isTurn || !turnState?.canCheck} onClick={() => onAction("check")}>
+          Check
+        </ActionButton>
+        <ActionButton disabled={!isTurn || !turnState?.canCall} onClick={() => onAction("call")}>
+          {turnState?.amountToCall ? `Call $${turnState.amountToCall}` : "Call"}
+        </ActionButton>
       </div>
 
       {canChooseAmount && (
         <div className={styles.amountActions}>
-          <label className={styles.amountLabel}>{amountLabel}</label>
+          <div className={styles.amountTopline}>
+            <span>{amountLabel}</span>
+            <strong>${actionAmount.toLocaleString()}</strong>
+          </div>
           <div className={styles.amountControls}>
             <button className={styles.amountBtn} disabled={locked} onClick={() => updateAmount(actionAmount - stepAmount)}>
-              -
+              −
             </button>
             <input
               className={styles.amountInput}
@@ -71,15 +80,15 @@ export const Actions = ({ onAction, turnState, locked = false }: ActionsProps) =
               +
             </button>
           </div>
-          <button
-            className={styles.actionBtn}
+          <ActionButton
+            fullWidth
             disabled={locked || actionAmount < minAmount}
             onClick={() => onAction(amountAction, actionAmount)}
           >
-            {amountLabel} ${actionAmount}
-          </button>
+            {amountLabel} ${actionAmount.toLocaleString()}
+          </ActionButton>
         </div>
       )}
-    </div>
+    </section>
   );
 };
