@@ -18,8 +18,10 @@ export const PhoneShell = ({
   footer,
   variant = "join",
 }: PhoneShellProps) => {
+  const shellClassName = [styles.shellPage, styles[variant]].filter(Boolean).join(" ");
+
   return (
-    <main className={`${styles.shellPage} ${styles[variant]}`}>
+    <main className={shellClassName}>
       <section className={styles.shellCard}>
         <div className={styles.heroGlow} />
         <header className={styles.shellHeader}>
