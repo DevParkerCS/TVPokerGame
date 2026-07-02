@@ -121,6 +121,7 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
     };
     const onHandStarted = () => {
       console.log("Received hand-started");
+      setHoleCards([]);
       setTurnState(null);
       setGameState((prev) => ({
         ...prev,
