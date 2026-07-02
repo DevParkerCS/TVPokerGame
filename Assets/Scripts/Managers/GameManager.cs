@@ -25,6 +25,7 @@ public class GameManager : MonoBehaviour
     private bool isGameStarted = false;
     private bool isEndingRound = false;
     private bool isGameOver = false;
+    private bool isHandActive = false;
     private Coroutine blindTimerCoroutine;
     #endregion
     #region Serialized Fields
@@ -101,17 +102,39 @@ public class GameManager : MonoBehaviour
 
     public void RemoveRemotePlayer(string playerId)
     {
-        if (isGameStarted)
+        if (string.IsNullOrEmpty(playerId))
+            return;
+
+        PlayersData.RemoveAll(p => p.ID == playerId);
+
+        if (!isGameStarted)
         {
-            Debug.LogWarning($"Ignoring leave from {playerId}; game already started.");
+            Debug.Log($"Remote player left before game start: {playerId}");
+            UpdateWaitingForPlayersStatus();
             return;
         }
 
-        int removedCount = PlayersData.RemoveAll(p => p.ID == playerId);
-        if (removedCount > 0)
-            Debug.Log($"Remote player left: {playerId}");
+        PlayerManager leavingPlayer = FindSeatByPlayerId(playerId);
+        if (leavingPlayer == null || leavingPlayer.Player == null)
+        {
+            Debug.LogWarning($"Leave requested for unknown player: {playerId}");
+            RefreshActivePlayersForNextHand();
+            return;
+        }
 
-        UpdateWaitingForPlayersStatus();
+        leavingPlayer.Player.MarkLeavingTable();
+        Debug.Log($"Remote player leaving table: {leavingPlayer.Player.PlayerName} ({playerId})");
+
+        if (isGameOver || isEndingRound || !isHandActive)
+        {
+            leavingPlayer.DisplayEliminated();
+            RefreshActivePlayersForNextHand();
+            SyncPlayerBalancesToServer();
+            MaybeEndGameAfterLeave();
+            return;
+        }
+
+        HandleLeavingPlayerDuringHand(leavingPlayer);
     }
 
     public void HandleRemotePlayerAction(string playerId, string action, int amount)
@@ -123,6 +146,13 @@ public class GameManager : MonoBehaviour
         if (current.Player.ID != playerId)
         {
             Debug.LogWarning($"Ignoring action from {playerId}; current turn is {current.Player.ID}");
+            return;
+        }
+
+        if (current.Player.IsLeavingTable)
+        {
+            ForceFoldLeavingPlayer(current);
+            MoveToNextPlayer();
             return;
         }
 
@@ -151,6 +181,7 @@ public class GameManager : MonoBehaviour
         isGameStarted = true;
         isGameOver = false;
         isEndingRound = false;
+        isHandActive = false;
         handId = 0;
         curStreet = 0;
         smallBlindIndex = 0;
@@ -283,6 +314,8 @@ public class GameManager : MonoBehaviour
         SetRestartButtonVisible(false);
         isGameStarted = true;
         isGameOver = false;
+        isEndingRound = false;
+        isHandActive = false;
         socketManager?.SendGameStarted();
         SetStatusText(string.Empty);
         Util.Shuffle(PlayersData);
@@ -317,11 +350,12 @@ public class GameManager : MonoBehaviour
             return;
 
         isEndingRound = true;
+        isHandActive = false;
         ClearTurnIndicators();
         potManager.AddAllBetsToPot(Players);
 
         List<PlayerManager> remainingPlayers = Players
-            .Where(pm => !pm.Player.HasFolded && pm.Player.Cards.Count == 2)
+            .Where(pm => !pm.Player.HasFolded && pm.Player.Cards.Count == 2 && !pm.Player.IsLeavingTable)
             .ToList();
 
         SortedDictionary<int, List<PlayerManager>> winners = new();
@@ -356,6 +390,7 @@ public class GameManager : MonoBehaviour
         isGameOver = true;
         isGameStarted = false;
         isEndingRound = false;
+        isHandActive = false;
         ClearTurnIndicators();
         SetRestartButtonVisible(true);
 
@@ -390,6 +425,84 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void HandleLeavingPlayerDuringHand(PlayerManager leavingPlayer)
+    {
+        bool wasCurrentPlayer = IsCurrentPlayer(leavingPlayer);
+
+        ForceFoldLeavingPlayer(leavingPlayer);
+        SyncPlayerBalancesToServer();
+
+        if (wasCurrentPlayer)
+        {
+            MoveToNextPlayer();
+            return;
+        }
+
+        if (ActivePlayerCount() <= 1)
+        {
+            EndRound();
+            return;
+        }
+
+        if (ActionablePlayerCount() == 0 || ShouldRunOutBecauseNoMoreBettingIsPossible())
+        {
+            RunOutBoardAndEndRound();
+            return;
+        }
+
+        ForceSendTurnStatesToPhones();
+    }
+
+    private void ForceFoldLeavingPlayer(PlayerManager pm)
+    {
+        if (pm == null || pm.Player == null)
+            return;
+
+        Player player = pm.Player;
+        player.MarkLeavingTable();
+
+        if (!player.HasFolded)
+        {
+            player.Fold();
+            if (player.TotalBet > 0)
+                potManager.AddBetToPot(pm);
+        }
+
+        pm.DisplayEliminated();
+    }
+
+    private bool IsCurrentPlayer(PlayerManager pm)
+    {
+        return pm != null &&
+               pm.Player != null &&
+               Players.Count > 0 &&
+               curToAct >= 0 &&
+               curToAct < Players.Count &&
+               Players[curToAct].Player.ID == pm.Player.ID;
+    }
+
+    private void MaybeEndGameAfterLeave()
+    {
+        if (!isGameStarted || isGameOver)
+            return;
+
+        if (Players.Count < 2)
+            EndGame(Players.Count == 1 ? Players[0] : null);
+        else
+            ForceSendTurnStatesToPhones();
+    }
+
+    private PlayerManager FindSeatByPlayerId(string playerId)
+    {
+        return PlayerSeats.FirstOrDefault(seat => seat.gameObject.activeSelf && seat.Player != null && seat.Player.ID == playerId);
+    }
+
+    private void ForceSendTurnStatesToPhones()
+    {
+        PhoneTurnStateReporter reporter = FindObjectOfType<PhoneTurnStateReporter>();
+        reporter?.ForceSendTurnStates();
+    }
+
     private void ResetAllPlayersForNewGame()
     {
         foreach (PlayerManager seat in PlayerSeats)
@@ -397,8 +510,13 @@ public class GameManager : MonoBehaviour
             if (!seat.gameObject.activeSelf || seat.Player == null)
                 continue;
 
-            seat.Player.ChipBalance = startingChipBalance;
-            seat.Player.ResetForNewHand();
+            if (seat.Player.IsLeavingTable)
+            {
+                seat.DisplayEliminated();
+                continue;
+            }
+
+            seat.Player.ResetForNewGame(startingChipBalance);
             seat.ResetAllVisual();
             seat.InitializePlayer();
             seat.UpdatePlayerBalance();
@@ -513,7 +631,7 @@ public class GameManager : MonoBehaviour
 
     private bool CanPlayNextHand(Player player)
     {
-        return player != null && player.ChipBalance > 0;
+        return player != null && player.ChipBalance > 0 && !player.IsLeavingTable;
     }
 
     private string GetCurrentDealerPlayerId()
@@ -667,7 +785,7 @@ public class GameManager : MonoBehaviour
     private PlayerManager GetGameWinnerIfComplete()
     {
         List<PlayerManager> playersWithChips = PlayerSeats
-            .Where(seat => seat.gameObject.activeSelf && seat.Player != null && seat.Player.ChipBalance > 0)
+            .Where(seat => seat.gameObject.activeSelf && seat.Player != null && CanPlayNextHand(seat.Player))
             .ToList();
 
         return playersWithChips.Count == 1 ? playersWithChips[0] : null;
@@ -680,7 +798,7 @@ public class GameManager : MonoBehaviour
         {
             int idx = (startIndex + offset) % total;
             var p = Players[idx].Player;
-            if (!p.HasFolded && p.ChipBalance > 0)
+            if (!p.HasFolded && p.ChipBalance > 0 && !p.IsLeavingTable)
                 return idx;
         }
         return -1;
@@ -690,7 +808,7 @@ public class GameManager : MonoBehaviour
     {
         int n = 0;
         foreach (var pm in Players)
-            if (!pm.Player.HasFolded)
+            if (!pm.Player.HasFolded && !pm.Player.IsLeavingTable)
                 n++;
         return n;
     }
@@ -699,14 +817,14 @@ public class GameManager : MonoBehaviour
     {
         int n = 0;
         foreach (var pm in Players)
-            if (!pm.Player.HasFolded && pm.Player.ChipBalance > 0)
+            if (!pm.Player.HasFolded && pm.Player.ChipBalance > 0 && !pm.Player.IsLeavingTable)
                 n++;
         return n;
     }
 
     private bool CanBetOrRaise(Player player, int requestedTotalBet)
     {
-        if (player.HasFolded || player.ChipBalance <= 0)
+        if (player.HasFolded || player.ChipBalance <= 0 || player.IsLeavingTable)
             return false;
 
         int maxTotalBet = player.CurBet + player.ChipBalance;
@@ -735,6 +853,7 @@ public class GameManager : MonoBehaviour
             yield break;
         }
 
+        isHandActive = true;
         handId++;
         curStreet = 0;
         SendHandStartedToPhones("New hand started");
@@ -775,7 +894,7 @@ public class GameManager : MonoBehaviour
 
         foreach (PlayerManager pm in Players)
         {
-            if (pm.Player.Cards.Count == 2)
+            if (pm.Player.Cards.Count == 2 && !pm.Player.IsLeavingTable)
             {
                 socketManager.SendHoleCardsToPhone(pm.Player.ID, pm.Player.Cards.ToList());
             }
