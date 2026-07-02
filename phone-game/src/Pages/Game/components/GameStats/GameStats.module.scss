@@ -1,0 +1,60 @@
+@use "../../../../styles/mixins" as *;
+@use "../../../../styles/tokens" as *;
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(10px, 2vw, 16px);
+
+  @include respond(sm) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.statCard,
+.roomCard {
+  @include glass-panel(var(--radius-lg));
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: clamp(12px, 2vw, 18px);
+
+  span {
+    color: rgba(255, 249, 233, 0.62);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: var(--cream-100);
+    font-family: $font-display;
+    font-size: clamp(1.05rem, 3vw, 1.55rem);
+    line-height: 1.02;
+  }
+}
+
+.hot {
+  background:
+    radial-gradient(circle at top right, rgba(255, 217, 131, 0.32), transparent 55%),
+    linear-gradient(160deg, rgba(24, 113, 67, 0.9), rgba(8, 35, 22, 0.94));
+  border-color: rgba(255, 217, 131, 0.58);
+}
+
+.roomCard {
+  grid-column: 1 / -1;
+  min-height: auto;
+  flex-direction: row;
+  align-items: center;
+
+  strong {
+    letter-spacing: 0.16em;
+  }
+
+  @include respond(sm) {
+    grid-column: auto;
+  }
+}
