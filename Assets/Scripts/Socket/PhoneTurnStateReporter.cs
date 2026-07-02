@@ -56,7 +56,7 @@ public class PhoneTurnStateReporter : MonoBehaviour
         if (socketManager == null || gameManager == null || gameManager.Players == null || gameManager.Players.Count == 0)
             return;
 
-        PlayerManager current = gameManager.Players.FirstOrDefault(pm => pm != null && pm.Player != null && pm.IsTurn);
+        PlayerManager current = gameManager.Players.FirstOrDefault(pm => pm != null && pm.Player != null && pm.IsTurn && !pm.Player.IsLeavingTable);
         if (current == null)
             return;
 
@@ -73,7 +73,7 @@ public class PhoneTurnStateReporter : MonoBehaviour
     private string BuildSignature(PlayerManager current, int potAmount)
     {
         string playerState = string.Join(",", gameManager.Players.Select(pm =>
-            $"{pm.Player.ID}:{pm.Player.ChipBalance}:{pm.Player.CurBet}:{pm.Player.HasFolded}"));
+            $"{pm.Player.ID}:{pm.Player.ChipBalance}:{pm.Player.CurBet}:{pm.Player.HasFolded}:{pm.Player.IsLeavingTable}"));
 
         return $"{current.Player.ID}|{BetManager.lastBetAmt}|{potAmount}|{playerState}";
     }
@@ -82,7 +82,7 @@ public class PhoneTurnStateReporter : MonoBehaviour
     {
         int minRaiseTo = SafeGetMinimumRaiseTo();
 
-        foreach (PlayerManager pm in gameManager.Players)
+        foreach (PlayerManager pm in gameManager.Players.Where(pm => pm.Player != null && !pm.Player.IsLeavingTable))
         {
             Player player = pm.Player;
             bool isTurn = player.ID == current.Player.ID;
