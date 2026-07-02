@@ -1,5 +1,35 @@
 @use "./styles/tokens" as *;
 
+:root {
+  --felt-950: #06170f;
+  --felt-900: #082316;
+  --felt-800: #0d321f;
+  --felt-700: #12492f;
+  --felt-600: #187143;
+  --mint-300: #74f7bd;
+  --mint-200: #a8ffd6;
+  --gold-500: #f4bc5f;
+  --gold-400: #ffd983;
+  --gold-300: #ffe9ad;
+  --coral-500: #ff6d61;
+  --rose-500: #ef4565;
+  --blue-500: #4eb7ff;
+  --ink-950: #07100d;
+  --ink-800: #17231f;
+  --cream-100: #fff9e9;
+  --cream-200: #f6ecd0;
+  --white: #ffffff;
+  --shadow-soft: 0 20px 80px rgba(0, 0, 0, 0.38);
+  --shadow-card: 0 14px 36px rgba(0, 0, 0, 0.28);
+  --shadow-button: 0 12px 0 rgba(0, 0, 0, 0.22), 0 18px 34px rgba(0, 0, 0, 0.32);
+  --radius-2xl: 32px;
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --safe-bottom: max(18px, env(safe-area-inset-bottom));
+}
+
 * {
   box-sizing: border-box;
 }
