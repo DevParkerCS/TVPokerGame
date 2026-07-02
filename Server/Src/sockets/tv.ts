@@ -4,6 +4,7 @@ import {
   GameState,
   PhoneHandLifecyclePayload,
   PhoneTurnStatePayload,
+  PlayerBalancesPayload,
 } from "../Types/Types";
 import { CreateNewGame } from "../Game/Factory";
 import { games } from "../State/GameState";
@@ -87,6 +88,36 @@ export function registerTV(ns: Namespace) {
       }
     });
 
+    socket.on("sync-player-balances", (payload: PlayerBalancesPayload, ack) => {
+      try {
+        const roomId = cleanRoomId(payload.roomId || socket.data.roomId || "");
+        const game = games.get(roomId);
+
+        if (!game) {
+          ack?.({ ok: false, error: "Room not found" });
+          return;
+        }
+
+        for (const playerBalance of payload.players || []) {
+          const player = game.players[playerBalance.playerId];
+          if (!player) continue;
+
+          player.balance = playerBalance.balance;
+          player.totalBet = playerBalance.totalBet;
+          player.curBet = playerBalance.curBet;
+          player.hasFolded = playerBalance.hasFolded;
+
+          ns.server.of("/phone").to(playerBalance.playerId).emit("balance-sync", {
+            balance: playerBalance.balance,
+          });
+        }
+
+        ack?.({ ok: true, data: { synced: true } });
+      } catch (e) {
+        ack?.({ ok: false, error: String(e) });
+      }
+    });
+
     socket.on("phone-hand-lifecycle", (payload: PhoneHandLifecyclePayload & { eventName?: string; eventValue?: string }, ack) => {
       try {
         const roomId = cleanRoomId(payload.roomId || socket.data.roomId || "");
@@ -128,6 +159,11 @@ export function registerTV(ns: Namespace) {
           ack?.({ ok: false, error: "Player not found in room" });
           return;
         }
+
+        game.players[payload.playerId].balance = payload.balance;
+        game.players[payload.playerId].curBet = payload.playerBet;
+        game.lastBetAmt = payload.currentBet;
+        game.pot.potAmt = payload.pot;
 
         ns.server.of("/phone").to(payload.playerId).emit("turn-state", payload);
         ack?.({ ok: true, data: { delivered: true } });
