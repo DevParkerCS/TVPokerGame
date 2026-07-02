@@ -2,21 +2,32 @@
 @use "../../../../styles/tokens" as *;
 
 .actionsWrapper {
-  @include felt-panel(var(--radius-xl));
+  @include felt-panel(var(--radius-lg));
   display: flex;
   flex-direction: column;
-  gap: clamp(14px, 2vw, 20px);
-  padding: clamp(16px, 3vw, 26px);
+  gap: 8px;
+  padding: 10px;
+
+  @include respond(sm) {
+    gap: clamp(14px, 2vw, 20px);
+    padding: clamp(16px, 3vw, 26px);
+    border-radius: var(--radius-xl);
+  }
 }
 
 .actionsHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+
   p {
-    margin: 0 0 0.25rem;
+    margin: 0;
     color: var(--gold-400);
     font-family: $font-display;
-    font-size: 0.75rem;
+    font-size: 0.62rem;
     font-weight: 900;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
   }
 
@@ -24,76 +35,152 @@
     margin: 0;
     color: var(--cream-100);
     font-family: $font-display;
-    font-size: clamp(1.55rem, 4.6vw, 2.35rem);
+    font-size: clamp(1.1rem, 5vw, 1.45rem);
     line-height: 1;
     letter-spacing: -0.04em;
+  }
+
+  @include respond(sm) {
+    display: block;
+
+    p {
+      margin-bottom: 0.25rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+    }
+
+    h2 {
+      font-size: clamp(1.55rem, 4.6vw, 2.35rem);
+    }
   }
 }
 
 .mainActions {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+
+  button {
+    min-height: 42px;
+    padding: 0.5rem 0.35rem;
+    font-size: clamp(0.72rem, 3vw, 0.88rem);
+  }
 
   @include respond(sm) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+
+    button {
+      min-height: 48px;
+      padding: 0.82rem 1.15rem;
+      font-size: clamp(0.92rem, 2vw, 1.05rem);
+    }
   }
 }
 
 .amountActions {
-  @include glass-panel(var(--radius-lg));
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  padding: clamp(14px, 2.5vw, 20px);
+  @include glass-panel(var(--radius-md));
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+
+  > button {
+    grid-column: 1 / -1;
+    min-height: 42px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  @include respond(sm) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+    padding: clamp(14px, 2.5vw, 20px);
+    border-radius: var(--radius-lg);
+
+    > button {
+      min-height: 48px;
+      padding: 0.82rem 1.15rem;
+      font-size: clamp(0.92rem, 2vw, 1.05rem);
+    }
+  }
 }
 
 .amountTopline {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
 
   span {
     color: rgba(255, 249, 233, 0.64);
-    font-size: 0.78rem;
+    font-size: 0.62rem;
     font-weight: 900;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
   }
 
   strong {
     color: var(--gold-300);
     font-family: $font-display;
-    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    font-size: clamp(1rem, 5vw, 1.3rem);
+    line-height: 1;
+  }
+
+  @include respond(sm) {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+
+    span {
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+    }
+
+    strong {
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+    }
   }
 }
 
 .amountControls {
   display: grid;
-  grid-template-columns: 50px 1fr 50px;
-  gap: 0.6rem;
+  grid-template-columns: 38px 1fr 38px;
+  gap: 5px;
   align-items: center;
+
+  @include respond(sm) {
+    grid-template-columns: 50px 1fr 50px;
+    gap: 0.6rem;
+  }
 }
 
 .amountBtn {
   @include ghost-button;
   @include focus-ring;
-  height: 50px;
+  height: 38px;
   border-radius: 999px;
-  font-size: 1.6rem;
+  font-size: 1.25rem;
   line-height: 1;
+
+  @include respond(sm) {
+    height: 50px;
+    font-size: 1.6rem;
+  }
 }
 
 .amountInput {
   @include focus-ring;
-  height: 50px;
+  height: 38px;
   border: 1px solid rgba(255, 217, 131, 0.35);
   border-radius: 999px;
   color: var(--cream-100);
   background: rgba(0, 0, 0, 0.28);
   font-family: $font-display;
-  font-size: 1.18rem;
+  font-size: 0.96rem;
   font-weight: 900;
   text-align: center;
   outline: none;
@@ -101,5 +188,10 @@
   &:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+
+  @include respond(sm) {
+    height: 50px;
+    font-size: 1.18rem;
   }
 }
