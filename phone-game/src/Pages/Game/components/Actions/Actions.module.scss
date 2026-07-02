@@ -1,82 +1,105 @@
+@use "../../../../styles/mixins" as *;
+@use "../../../../styles/tokens" as *;
+
 .actionsWrapper {
+  @include felt-panel(var(--radius-xl));
   display: flex;
   flex-direction: column;
+  gap: clamp(14px, 2vw, 20px);
+  padding: clamp(16px, 3vw, 26px);
+}
+
+.actionsHeader {
+  p {
+    margin: 0 0 0.25rem;
+    color: var(--gold-400);
+    font-family: $font-display;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 0;
+    color: var(--cream-100);
+    font-family: $font-display;
+    font-size: clamp(1.55rem, 4.6vw, 2.35rem);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+}
+
+.mainActions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+
+  @include respond(sm) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.amountActions {
+  @include glass-panel(var(--radius-lg));
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: clamp(14px, 2.5vw, 20px);
+}
+
+.amountTopline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+
+  span {
+    color: rgba(255, 249, 233, 0.64);
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: var(--gold-300);
+    font-family: $font-display;
+    font-size: clamp(1.2rem, 4vw, 1.8rem);
+  }
+}
+
+.amountControls {
+  display: grid;
+  grid-template-columns: 50px 1fr 50px;
+  gap: 0.6rem;
   align-items: center;
-  gap: 0.9rem;
-  margin-top: 1.25rem;
+}
 
-  .mainActions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
+.amountBtn {
+  @include ghost-button;
+  @include focus-ring;
+  height: 50px;
+  border-radius: 999px;
+  font-size: 1.6rem;
+  line-height: 1;
+}
 
-  .amountActions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.45rem;
-  }
+.amountInput {
+  @include focus-ring;
+  height: 50px;
+  border: 1px solid rgba(255, 217, 131, 0.35);
+  border-radius: 999px;
+  color: var(--cream-100);
+  background: rgba(0, 0, 0, 0.28);
+  font-family: $font-display;
+  font-size: 1.18rem;
+  font-weight: 900;
+  text-align: center;
+  outline: none;
 
-  .amountLabel {
-    color: var(--gold-brand);
-    font-size: 0.9rem;
-    font-weight: bold;
-    letter-spacing: 0.06rem;
-  }
-
-  .amountControls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-  }
-
-  .amountBtn {
-    width: 42px;
-    height: 42px;
-    border-radius: 5px;
-    border: 1px solid var(--gold-btn-mid);
-    background-color: var(--green-surface-2);
-    color: var(--gold-brand);
-    font-size: 1.4rem;
-    font-weight: bold;
-  }
-
-  .amountInput {
-    width: 115px;
-    height: 42px;
-    border-radius: 5px;
-    border: 1px solid var(--gold-btn-mid);
-    background-color: var(--green-surface-2);
-    color: var(--gold-brand);
-    font-size: 1.1rem;
-    font-weight: bold;
-    text-align: center;
-  }
-
-  .actionBtn {
-    min-width: 105px;
-    font-size: 1.25rem;
-    text-align: center;
-    margin: 0.15rem;
-    padding: 0.25rem 1rem;
-    border-radius: 5px;
-    border: 1px solid var(--gold-btn-mid);
-    background-color: var(--green-surface-2);
-    color: var(--gold-brand);
-    font-weight: bold;
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-  }
-
-  .amountBtn:disabled,
-  .amountInput:disabled {
-    opacity: 0.4;
+  &:disabled {
+    opacity: 0.45;
     cursor: not-allowed;
   }
 }
