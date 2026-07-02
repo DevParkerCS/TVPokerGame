@@ -9,6 +9,8 @@ using UnityEngine.UI;
 public class GameManager : MonoBehaviour
 {
     #region Variables
+    private const int DefaultStartingChipBalance = 10000;
+
     public int dealerIndex;
     private CardManager cardManager;
     public List<PlayerManager> Players;
@@ -23,10 +25,12 @@ public class GameManager : MonoBehaviour
     private bool isGameStarted = false;
     private bool isEndingRound = false;
     private bool isGameOver = false;
+    private Coroutine blindTimerCoroutine;
     #endregion
     #region Serialized Fields
     [SerializeField] public List<PlayerManager> PlayerSeats;
     [SerializeField] private Button startGameBtn;
+    [SerializeField] private Button restartGameBtn;
     [SerializeField] private Sprite testSprite;
     [SerializeField] private AvatarLibrary avatarLib;
     [SerializeField] private PotManager potManager;
@@ -34,6 +38,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private SocketManager socketManager;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private bool useTestPlayers = false;
+    [SerializeField] private int startingChipBalance = DefaultStartingChipBalance;
     [SerializeField] private float handEndDelaySeconds = 5f;
     #endregion
 
@@ -55,11 +60,12 @@ public class GameManager : MonoBehaviour
         {
             for (int i = 0; i < 10; i++)
             {
-                Player player = new Player(10000, $"John{i}", "green_mus");
+                Player player = new Player(startingChipBalance, $"John{i}", "green_mus");
                 PlayersData.Add(player);
             }
         }
 
+        SetRestartButtonVisible(false);
         UpdateWaitingForPlayersStatus();
     }
 
@@ -84,7 +90,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        int startingBalance = payload.balance > 0 ? payload.balance : 10000;
+        int startingBalance = payload.balance > 0 ? payload.balance : startingChipBalance;
         string spriteCode = string.IsNullOrWhiteSpace(payload.spriteCode) ? "green_mus" : payload.spriteCode;
         Player player = new Player(payload.playerId, startingBalance, payload.name, spriteCode);
         PlayersData.Add(player);
@@ -128,6 +134,57 @@ public class GameManager : MonoBehaviour
             case "bet": PlayerBet(amount); break;
             case "raise": PlayerRaise(amount); break;
         }
+    }
+
+    public void RestartGame()
+    {
+        if (PlayersData.Count < 2)
+        {
+            Debug.LogWarning("Need at least 2 players to restart.");
+            SetStatusText($"Need at least 2 players — {BuildPlayerCountText()}");
+            return;
+        }
+
+        StopAllCoroutines();
+        blindTimerCoroutine = null;
+
+        isGameStarted = true;
+        isGameOver = false;
+        isEndingRound = false;
+        handId = 0;
+        curStreet = 0;
+        smallBlindIndex = 0;
+        bigBlindIndex = 0;
+        curToAct = 0;
+        lastToAct = 0;
+
+        SetRestartButtonVisible(false);
+        if (startGameBtn != null)
+            startGameBtn.gameObject.SetActive(false);
+
+        ClearTurnIndicators();
+        cardManager.ResetCards();
+        potManager.ResetPot();
+        ResetAllPlayersForNewGame();
+        RefreshActivePlayersForNextHand();
+
+        if (Players.Count < 2)
+        {
+            SetStatusText("Need at least 2 players with chips to restart.");
+            isGameStarted = false;
+            return;
+        }
+
+        dealerIndex = UnityEngine.Random.Range(0, Players.Count);
+        Players[dealerIndex].ToggleButton();
+
+        SyncPlayerBalancesToServer();
+        SendHandResetToPhones("New game starting");
+        socketManager?.SendGameStarted();
+        SetStatusText(string.Empty);
+
+        StartBlindTimer();
+        StartCoroutine(StartRound());
     }
 
     public void PlayerBet(int amount)
@@ -223,6 +280,7 @@ public class GameManager : MonoBehaviour
         }
 
         startGameBtn.gameObject.SetActive(false);
+        SetRestartButtonVisible(false);
         isGameStarted = true;
         isGameOver = false;
         socketManager?.SendGameStarted();
@@ -249,8 +307,8 @@ public class GameManager : MonoBehaviour
         dealerIndex = UnityEngine.Random.Range(0, Players.Count);
         Players[dealerIndex].ToggleButton();
 
+        StartBlindTimer();
         StartCoroutine(StartRound());
-        StartCoroutine(StartBlinds());
     }
 
     private void EndRound()
@@ -299,6 +357,7 @@ public class GameManager : MonoBehaviour
         isGameStarted = false;
         isEndingRound = false;
         ClearTurnIndicators();
+        SetRestartButtonVisible(true);
 
         string gameEndedMessage = winner != null ? $"{winner.Player.PlayerName} wins the game!" : "Game over";
         SetStatusText(gameEndedMessage);
@@ -329,6 +388,30 @@ public class GameManager : MonoBehaviour
         {
             pm.ToggleTurn(false);
         }
+    }
+
+    private void ResetAllPlayersForNewGame()
+    {
+        foreach (PlayerManager seat in PlayerSeats)
+        {
+            if (!seat.gameObject.activeSelf || seat.Player == null)
+                continue;
+
+            seat.Player.ChipBalance = startingChipBalance;
+            seat.Player.ResetForNewHand();
+            seat.ResetAllVisual();
+            seat.InitializePlayer();
+            seat.UpdatePlayerBalance();
+        }
+    }
+
+    private void SetRestartButtonVisible(bool visible)
+    {
+        if (restartGameBtn == null)
+            return;
+
+        restartGameBtn.gameObject.SetActive(visible);
+        restartGameBtn.interactable = visible;
     }
 
     private void SyncPlayerBalancesToServer()
@@ -392,6 +475,7 @@ public class GameManager : MonoBehaviour
             Players[dealerIndex].ToggleButton();
 
         cardManager.ResetCards();
+        potManager.ResetPot();
         BetManager.ResetBets();
 
         foreach (PlayerManager seat in PlayerSeats)
@@ -698,14 +782,25 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private IEnumerator StartBlinds()
+    private void StartBlindTimer()
     {
         BetManager.GenerateBlinds();
+
+        if (blindTimerCoroutine != null)
+            StopCoroutine(blindTimerCoroutine);
+
+        blindTimerCoroutine = StartCoroutine(AdvanceBlindsOverTime());
+    }
+
+    private IEnumerator AdvanceBlindsOverTime()
+    {
         for(int i = 0; i < roundMinutes; i++)
         {
             yield return new WaitForSeconds(roundMinutes * 60f);
             BetManager.IncreaseBlind();
         }
+
+        blindTimerCoroutine = null;
     }
 
     private void DisplayPayouts(SortedDictionary<int, List<PlayerManager>> winners, Dictionary<string, int> payouts)
