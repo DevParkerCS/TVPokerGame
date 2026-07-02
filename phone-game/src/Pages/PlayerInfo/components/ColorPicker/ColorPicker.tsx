@@ -1,10 +1,11 @@
+import type { Dispatch, SetStateAction } from "react";
 import { RgbColorPicker, type RgbColor } from "react-colorful";
 import styles from "./ColorPicker.module.scss";
 import { PlayerInfo } from "../../PlayerInfo";
 import { avatarByName } from "../../../../assets/avatars";
 
 type ColorPickerProps = {
-  setPlayerInfo: React.Dispatch<React.SetStateAction<PlayerInfo>>;
+  setPlayerInfo: Dispatch<SetStateAction<PlayerInfo>>;
   playerInfo: PlayerInfo;
 };
 
