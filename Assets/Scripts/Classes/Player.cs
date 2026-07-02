@@ -12,6 +12,7 @@ public class Player
     public int CurBet { get; private set; } = 0;
     public bool HasFolded { get; private set; } = false;
     public bool IsTurn { get; set; } = false;
+    public bool IsLeavingTable { get; private set; } = false;
     public string IconCode { get; set; }
     #endregion
 
@@ -40,6 +41,12 @@ public class Player
         HasFolded = true;
     }
 
+    public void MarkLeavingTable()
+    {
+        IsLeavingTable = true;
+        IsTurn = false;
+    }
+
     public void Bet(int newTotalBet)
     {
         int toAdd = newTotalBet - CurBet;
@@ -61,6 +68,13 @@ public class Player
     public void Pay(int amount)
     {
         ChipBalance += amount;
+    }
+
+    public void ResetForNewGame(int chipBalance)
+    {
+        IsLeavingTable = false;
+        ChipBalance = chipBalance;
+        ResetForNewHand();
     }
 
     public void ResetForNewHand()
