@@ -1,16 +1,26 @@
 @use "../../../../styles/mixins" as *;
 
 .card {
-  width: clamp(94px, 24vw, 142px);
+  width: clamp(70px, 20vw, 90px);
   aspect-ratio: 5 / 7;
-  border-radius: clamp(12px, 2.2vw, 18px);
+  border-radius: 12px;
   background: var(--cream-100);
-  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   transform: rotate(-2deg);
 
   &:nth-child(2) {
-    transform: rotate(3deg) translateY(8px);
+    transform: rotate(3deg) translateY(6px);
+  }
+
+  @include respond(sm) {
+    width: clamp(94px, 24vw, 142px);
+    border-radius: clamp(12px, 2.2vw, 18px);
+    box-shadow: 0 18px 32px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+
+    &:nth-child(2) {
+      transform: rotate(3deg) translateY(8px);
+    }
   }
 }
 
@@ -27,9 +37,13 @@
   display: grid;
   place-items: center;
   color: var(--ink-950);
-  font-size: clamp(1.8rem, 8vw, 3rem);
+  font-size: clamp(1.45rem, 7vw, 2.2rem);
   font-weight: 1000;
   font-family: "Trebuchet MS", system-ui, sans-serif;
+
+  @include respond(sm) {
+    font-size: clamp(1.8rem, 8vw, 3rem);
+  }
 }
 
 .red .cardFallback {
