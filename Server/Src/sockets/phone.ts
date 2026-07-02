@@ -134,11 +134,6 @@ export function registerPhone(ns: Namespace) {
         socket.data.roomId = undefined;
         socket.data.playerId = undefined;
 
-        if (game.isStarted) {
-          ack({ ok: true, data: { left: true, removedFromTable: false } });
-          return;
-        }
-
         delete game.players[playerId];
 
         const playerLeft: PlayerLeftPayload = {
