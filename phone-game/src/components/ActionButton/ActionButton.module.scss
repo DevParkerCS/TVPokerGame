@@ -1,0 +1,38 @@
+@use "../../styles/mixins" as *;
+
+.button {
+  @include focus-ring;
+  min-height: 48px;
+  padding: 0.82rem 1.15rem;
+  border-radius: 999px;
+  font-size: clamp(0.92rem, 2vw, 1.05rem);
+  text-transform: uppercase;
+}
+
+.primary {
+  @include gold-button;
+}
+
+.secondary {
+  @include button-base;
+  color: var(--cream-100);
+  background: linear-gradient(180deg, var(--felt-600), var(--felt-800));
+  border: 1px solid rgba(168, 255, 214, 0.34);
+  box-shadow: var(--shadow-button);
+}
+
+.danger {
+  @include button-base;
+  color: var(--cream-100);
+  background: linear-gradient(180deg, var(--coral-500), var(--rose-500));
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  box-shadow: var(--shadow-button);
+}
+
+.ghost {
+  @include ghost-button;
+}
+
+.fullWidth {
+  width: 100%;
+}
