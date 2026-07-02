@@ -460,6 +460,10 @@ public class GameManager : MonoBehaviour
                 potManager.AddBetToPot(pm);
         }
 
+        int foldedIndex = Players.IndexOf(pm);
+        if (foldedIndex >= 0)
+            NormalizeLastToActAfterAction(foldedIndex);
+
         pm.DisplayEliminated();
     }
 
@@ -694,7 +698,9 @@ public class GameManager : MonoBehaviour
 
     private void MoveToNextPlayer()
     {
-        Players[curToAct].ToggleTurn(false);
+        int actedIndex = curToAct;
+        Players[actedIndex].ToggleTurn(false);
+        NormalizeLastToActAfterAction(actedIndex);
 
         if (ActivePlayerCount() <= 1)
         {
@@ -727,6 +733,19 @@ public class GameManager : MonoBehaviour
         Players[curToAct].ToggleTurn(true);
     }
 
+    private void NormalizeLastToActAfterAction(int actedIndex)
+    {
+        if (actedIndex != lastToAct)
+            return;
+
+        if (IsActionablePlayerAtIndex(lastToAct))
+            return;
+
+        int nextActionable = FindNextActivePlayer(actedIndex);
+        if (nextActionable != -1)
+            lastToAct = nextActionable;
+    }
+
     private void AdvanceStreetOrEndRound()
     {
         if (curStreet < 3 && ActivePlayerCount() > 1)
@@ -757,11 +776,14 @@ public class GameManager : MonoBehaviour
         if (!allMatched)
             return false;
 
-        // If the original last-to-act player folded/left/went all-in, action can never
-        // return to that exact index. In that case, once everyone remaining has matched,
-        // the street should complete instead of cycling forever.
         if (!IsActionablePlayerAtIndex(lastToAct))
-            return true;
+        {
+            int nextActionable = FindNextActivePlayer(lastToAct);
+            if (nextActionable == -1)
+                return true;
+
+            lastToAct = nextActionable;
+        }
 
         return nextIndex == lastToAct;
     }
