@@ -312,6 +312,7 @@ public class GameManager : MonoBehaviour
         if (isGameOver)
             yield break;
 
+        SendHandResetToPhones("Waiting for new hand");
         ResetForNextHand();
         if (isGameOver)
             yield break;
@@ -331,10 +332,25 @@ public class GameManager : MonoBehaviour
 
     private void SendHandEndedToPhones(string message)
     {
+        SendHandLifecycleToPhones("hand-ended", message);
+    }
+
+    private void SendHandResetToPhones(string message)
+    {
+        SendHandLifecycleToPhones("hand-reset", message);
+    }
+
+    private void SendHandStartedToPhones(string message)
+    {
+        SendHandLifecycleToPhones("hand-started", message);
+    }
+
+    private void SendHandLifecycleToPhones(string eventName, string message)
+    {
         if (socketManager == null)
             return;
 
-        socketManager.SendHandLifecycleToPhones("hand-ended", handId, message);
+        socketManager.SendHandLifecycleToPhones(eventName, handId, message);
     }
 
     private string BuildHandEndedMessage(Dictionary<string, int> payouts)
@@ -628,6 +644,7 @@ public class GameManager : MonoBehaviour
 
         handId++;
         curStreet = 0;
+        SendHandStartedToPhones("New hand started");
         yield return StartCoroutine(cardManager.DealCards());
         SendHoleCardsToPhones();
         smallBlindIndex = (dealerIndex + 1) % Players.Count;
