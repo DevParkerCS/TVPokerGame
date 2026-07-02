@@ -157,7 +157,6 @@ export const Game = () => {
     };
     const onHandStarted = (payload?: { message?: string }) => {
       setActionLocked(false);
-      setCardsShown(false);
       setStatus(payload?.message || "New hand started");
     };
 
