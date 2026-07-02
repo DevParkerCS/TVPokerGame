@@ -28,6 +28,7 @@ public class GameManager : MonoBehaviour
     private bool isHandActive = false;
     private Coroutine blindTimerCoroutine;
     #endregion
+
     #region Serialized Fields
     [SerializeField] public List<PlayerManager> PlayerSeats;
     [SerializeField] private Button startGameBtn;
@@ -234,14 +235,13 @@ public class GameManager : MonoBehaviour
             lastToAct = curToAct;
 
         pm.DisplayBet(player.CurBet, result.IsAllIn ? BetManager.BetType.AllIn : BetManager.BetType.Bet);
-
         MoveToNextPlayer();
     }
 
     public void PlayerRaise(int amount)
     {
-        var pm = Players[curToAct];
-        var player = pm.Player;
+        PlayerManager pm = Players[curToAct];
+        Player player = pm.Player;
 
         if (!CanBetOrRaise(player, amount))
             return;
@@ -254,14 +254,13 @@ public class GameManager : MonoBehaviour
             lastToAct = curToAct;
 
         pm.DisplayBet(player.CurBet, result.IsAllIn ? BetManager.BetType.AllIn : BetManager.BetType.Raise);
-
         MoveToNextPlayer();
     }
 
     public void PlayerCall()
     {
-        var pm = Players[curToAct];
-        var player = pm.Player;
+        PlayerManager pm = Players[curToAct];
+        Player player = pm.Player;
 
         if (BetManager.lastBetAmt <= player.CurBet)
         {
@@ -274,7 +273,6 @@ public class GameManager : MonoBehaviour
             return;
 
         pm.DisplayBet(player.CurBet, result.IsAllIn ? BetManager.BetType.AllIn : BetManager.BetType.Call);
-
         MoveToNextPlayer();
     }
 
@@ -360,13 +358,9 @@ public class GameManager : MonoBehaviour
 
         SortedDictionary<int, List<PlayerManager>> winners = new();
         if (remainingPlayers.Count == 1)
-        {
             winners[0] = remainingPlayers;
-        }
         else
-        {
             winners = showdownManager.HandleShowdown(remainingPlayers, cardManager);
-        }
 
         Dictionary<string, int> payouts = potManager.GetWinnersPayout(winners);
         DisplayPayouts(winners, payouts);
@@ -420,9 +414,7 @@ public class GameManager : MonoBehaviour
     private void ClearTurnIndicators()
     {
         foreach (PlayerManager pm in Players)
-        {
             pm.ToggleTurn(false);
-        }
     }
 
     private void HandleLeavingPlayerDuringHand(PlayerManager leavingPlayer)
@@ -646,10 +638,9 @@ public class GameManager : MonoBehaviour
     {
         curStreet++;
         potManager.AddAllBetsToPot(Players);
-
         BetManager.ResetBets();
 
-        foreach (var pm in Players)
+        foreach (PlayerManager pm in Players)
         {
             pm.ResetForStreet();
             pm.Player.ResetForNewStreet();
@@ -762,7 +753,17 @@ public class GameManager : MonoBehaviour
         if (nextIndex == -1)
             return true;
 
-        return nextIndex == lastToAct && AllActionablePlayersHaveMatchedCurrentBet();
+        bool allMatched = AllActionablePlayersHaveMatchedCurrentBet();
+        if (!allMatched)
+            return false;
+
+        // If the original last-to-act player folded/left/went all-in, action can never
+        // return to that exact index. In that case, once everyone remaining has matched,
+        // the street should complete instead of cycling forever.
+        if (!IsActionablePlayerAtIndex(lastToAct))
+            return true;
+
+        return nextIndex == lastToAct;
     }
 
     private bool ShouldRunOutBecauseNoMoreBettingIsPossible()
@@ -775,7 +776,10 @@ public class GameManager : MonoBehaviour
         foreach (PlayerManager pm in Players)
         {
             Player player = pm.Player;
-            if (!player.HasFolded && player.ChipBalance > 0 && player.CurBet < BetManager.lastBetAmt)
+            if (!IsActionablePlayer(player))
+                continue;
+
+            if (player.CurBet < BetManager.lastBetAmt)
                 return false;
         }
 
@@ -797,18 +801,28 @@ public class GameManager : MonoBehaviour
         for (int offset = 1; offset < total; offset++)
         {
             int idx = (startIndex + offset) % total;
-            var p = Players[idx].Player;
-            if (!p.HasFolded && p.ChipBalance > 0 && !p.IsLeavingTable)
+            Player player = Players[idx].Player;
+            if (IsActionablePlayer(player))
                 return idx;
         }
         return -1;
     }
 
+    private bool IsActionablePlayerAtIndex(int index)
+    {
+        return index >= 0 && index < Players.Count && IsActionablePlayer(Players[index].Player);
+    }
+
+    private bool IsActionablePlayer(Player player)
+    {
+        return player != null && !player.HasFolded && player.ChipBalance > 0 && !player.IsLeavingTable;
+    }
+
     private int ActivePlayerCount()
     {
         int n = 0;
-        foreach (var pm in Players)
-            if (!pm.Player.HasFolded && !pm.Player.IsLeavingTable)
+        foreach (PlayerManager pm in Players)
+            if (pm.Player != null && !pm.Player.HasFolded && !pm.Player.IsLeavingTable)
                 n++;
         return n;
     }
@@ -816,15 +830,15 @@ public class GameManager : MonoBehaviour
     private int ActionablePlayerCount()
     {
         int n = 0;
-        foreach (var pm in Players)
-            if (!pm.Player.HasFolded && pm.Player.ChipBalance > 0 && !pm.Player.IsLeavingTable)
+        foreach (PlayerManager pm in Players)
+            if (IsActionablePlayer(pm.Player))
                 n++;
         return n;
     }
 
     private bool CanBetOrRaise(Player player, int requestedTotalBet)
     {
-        if (player.HasFolded || player.ChipBalance <= 0 || player.IsLeavingTable)
+        if (!IsActionablePlayer(player))
             return false;
 
         int maxTotalBet = player.CurBet + player.ChipBalance;
@@ -895,9 +909,7 @@ public class GameManager : MonoBehaviour
         foreach (PlayerManager pm in Players)
         {
             if (pm.Player.Cards.Count == 2 && !pm.Player.IsLeavingTable)
-            {
                 socketManager.SendHoleCardsToPhone(pm.Player.ID, pm.Player.Cards.ToList());
-            }
         }
     }
 
@@ -913,7 +925,7 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator AdvanceBlindsOverTime()
     {
-        for(int i = 0; i < roundMinutes; i++)
+        for (int i = 0; i < roundMinutes; i++)
         {
             yield return new WaitForSeconds(roundMinutes * 60f);
             BetManager.IncreaseBlind();
@@ -927,9 +939,7 @@ public class GameManager : MonoBehaviour
         foreach (var entry in winners)
         {
             foreach (PlayerManager pm in entry.Value)
-            {
                 pm.UpdatePlayerBalance();
-            }
         }
     }
 
