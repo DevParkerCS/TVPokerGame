@@ -1,0 +1,39 @@
+@use "../../../../styles/mixins" as *;
+@use "../../../../styles/tokens" as *;
+
+.banner {
+  @include glass-panel(var(--radius-lg));
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-color: rgba(78, 183, 255, 0.36);
+
+  span {
+    flex: 0 0 auto;
+    padding: 0.35rem 0.58rem;
+    border-radius: 999px;
+    color: var(--ink-950);
+    background: var(--blue-500);
+    font-family: $font-display;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  p {
+    margin: 0;
+    color: var(--cream-100);
+    font-weight: 800;
+    line-height: 1.35;
+  }
+}
+
+.turn {
+  border-color: rgba(116, 247, 189, 0.42);
+
+  span {
+    background: var(--mint-300);
+  }
+}
