@@ -172,12 +172,31 @@ public class GameManager : MonoBehaviour
         if (PlayersData.Count < 2)
         {
             Debug.LogWarning("Need at least 2 players to restart.");
+            SetRestartButtonVisible(true);
             SetStatusText($"Need at least 2 players — {BuildPlayerCountText()}");
             return;
         }
 
         StopAllCoroutines();
         blindTimerCoroutine = null;
+
+        ClearTurnIndicators();
+        cardManager.ResetCards();
+        potManager.ResetPot();
+        RebuildSeatsFromPlayersDataForNewGame();
+        RefreshActivePlayersForNextHand();
+
+        if (Players.Count < 2)
+        {
+            Debug.LogWarning("Need at least 2 seated players with chips to restart.");
+            isGameStarted = false;
+            isGameOver = true;
+            isEndingRound = false;
+            isHandActive = false;
+            SetRestartButtonVisible(true);
+            SetStatusText("Need at least 2 players with chips to restart.");
+            return;
+        }
 
         isGameStarted = true;
         isGameOver = false;
@@ -193,19 +212,6 @@ public class GameManager : MonoBehaviour
         SetRestartButtonVisible(false);
         if (startGameBtn != null)
             startGameBtn.gameObject.SetActive(false);
-
-        ClearTurnIndicators();
-        cardManager.ResetCards();
-        potManager.ResetPot();
-        ResetAllPlayersForNewGame();
-        RefreshActivePlayersForNextHand();
-
-        if (Players.Count < 2)
-        {
-            SetStatusText("Need at least 2 players with chips to restart.");
-            isGameStarted = false;
-            return;
-        }
 
         dealerIndex = UnityEngine.Random.Range(0, Players.Count);
         Players[dealerIndex].ToggleButton();
@@ -516,6 +522,37 @@ public class GameManager : MonoBehaviour
             seat.ResetAllVisual();
             seat.InitializePlayer();
             seat.UpdatePlayerBalance();
+        }
+    }
+
+    private void RebuildSeatsFromPlayersDataForNewGame()
+    {
+        Players.Clear();
+
+        for (int i = 0; i < PlayerSeats.Count; i++)
+        {
+            PlayerSeats[i].ToggleTurn(false);
+            PlayerSeats[i].Player = null;
+            PlayerSeats[i].ResetAllVisual();
+            PlayerSeats[i].gameObject.SetActive(false);
+        }
+
+        int seatIndex = 0;
+        foreach (Player player in PlayersData)
+        {
+            if (player == null || seatIndex >= PlayerSeats.Count)
+                continue;
+
+            player.ResetForNewGame(startingChipBalance);
+
+            PlayerManager seat = PlayerSeats[seatIndex];
+            seat.gameObject.SetActive(true);
+            seat.Player = player;
+            seat.ResetAllVisual();
+            seat.InitializePlayer();
+            seat.UpdatePlayerBalance();
+            Players.Add(seat);
+            seatIndex++;
         }
     }
 
