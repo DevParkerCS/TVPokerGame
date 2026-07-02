@@ -99,6 +99,13 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
         canPlayerRaise: payload.canRaise,
       }));
     };
+    const onBalanceSync = (payload: { balance: number }) => {
+      console.log("Received balance-sync", payload.balance);
+      setGameState((prev) => ({
+        ...prev,
+        balance: payload.balance,
+      }));
+    };
     const onHandEnded = () => {
       console.log("Received hand-ended");
       setTurnState(null);
@@ -132,6 +139,7 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
     socket.on("connect", onConnect);
     socket.on("hole-cards", onHoleCards);
     socket.on("turn-state", onTurnState);
+    socket.on("balance-sync", onBalanceSync);
     socket.on("hand-ended", onHandEnded);
     socket.on("hand-reset", onHandReset);
     socket.on("hand-started", onHandStarted);
@@ -140,6 +148,7 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
       socket.off("connect", onConnect);
       socket.off("hole-cards", onHoleCards);
       socket.off("turn-state", onTurnState);
+      socket.off("balance-sync", onBalanceSync);
       socket.off("hand-ended", onHandEnded);
       socket.off("hand-reset", onHandReset);
       socket.off("hand-started", onHandStarted);
