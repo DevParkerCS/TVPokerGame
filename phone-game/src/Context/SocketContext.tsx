@@ -101,6 +101,7 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
     };
     const onHandEnded = () => {
       console.log("Received hand-ended");
+      setHoleCards([]);
       setTurnState(null);
       setGameState((prev) => ({
         ...prev,
@@ -110,7 +111,6 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
     };
     const onHandReset = () => {
       console.log("Received hand-reset");
-      setHoleCards([]);
       setTurnState(null);
       setGameState((prev) => ({
         ...prev,
@@ -121,7 +121,6 @@ export const SocketContextProvider = ({ children }: PropsWithChildren) => {
     };
     const onHandStarted = () => {
       console.log("Received hand-started");
-      setHoleCards([]);
       setTurnState(null);
       setGameState((prev) => ({
         ...prev,
