@@ -9,8 +9,7 @@ public class PotManager : MonoBehaviour
 
     private void Awake()
     {
-        pot = new Pot();
-        potTMP.text = "Pot: 0";
+        ResetPot();
     }
 
     public void AddAllBetsToPot(List<PlayerManager> players)
@@ -21,19 +20,31 @@ public class PotManager : MonoBehaviour
                 pot.AddContribution(p.Player, p.Player.CurBet);
         }
 
-        potTMP.text = "Pot: " + pot.TotalAmt.ToString();
+        UpdatePotText();
     }
 
     public void AddBetToPot(PlayerManager p)
     {
         pot.AddContribution(p.Player, p.Player.CurBet);
-        potTMP.text = "Pot: " + pot.TotalAmt.ToString();
+        UpdatePotText();
     }
 
     public Dictionary<string, int> GetWinnersPayout(SortedDictionary<int, List<PlayerManager>> winners)
     {
         Dictionary<string, int> payouts = pot.PayoutWinners(winners);
-        potTMP.text = "Pot: " + pot.TotalAmt;
+        UpdatePotText();
         return payouts;
+    }
+
+    public void ResetPot()
+    {
+        pot = new Pot();
+        UpdatePotText();
+    }
+
+    private void UpdatePotText()
+    {
+        if (potTMP != null)
+            potTMP.text = "Pot: " + pot.TotalAmt;
     }
 }
