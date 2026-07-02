@@ -113,6 +113,23 @@ public class PhoneTurnStatePayload
     public bool canRaise;
 }
 
+[Serializable]
+public class PlayerBalancePayload
+{
+    public string playerId;
+    public int balance;
+    public int totalBet;
+    public int curBet;
+    public bool hasFolded;
+}
+
+[Serializable]
+public class PlayerBalancesPayload
+{
+    public string roomId;
+    public List<PlayerBalancePayload> players;
+}
+
 public class SocketManager : MonoBehaviour
 {
     private SocketIOUnity socket;
@@ -474,6 +491,37 @@ public class SocketManager : MonoBehaviour
         catch (Exception ex)
         {
             Debug.LogError($"Failed to send turn state to phone: {ex.Message}");
+        }
+    }
+
+    public async void SendPlayerBalancesToServer(IEnumerable<PlayerManager> playerSeats)
+    {
+        if (socket == null || !isConnected || string.IsNullOrEmpty(roomId) || playerSeats == null)
+            return;
+
+        PlayerBalancesPayload payload = new PlayerBalancesPayload
+        {
+            roomId = roomId,
+            players = playerSeats
+                .Where(pm => pm != null && pm.Player != null && !string.IsNullOrEmpty(pm.Player.ID))
+                .Select(pm => new PlayerBalancePayload
+                {
+                    playerId = pm.Player.ID,
+                    balance = pm.Player.ChipBalance,
+                    totalBet = pm.Player.TotalBet,
+                    curBet = pm.Player.CurBet,
+                    hasFolded = pm.Player.HasFolded
+                })
+                .ToList()
+        };
+
+        try
+        {
+            await socket.EmitAsync("sync-player-balances", payload);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to sync player balances: {ex.Message}");
         }
     }
 
