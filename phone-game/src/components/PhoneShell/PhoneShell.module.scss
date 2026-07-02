@@ -24,8 +24,71 @@
   }
 }
 
+.game {
+  place-items: start center;
+  padding: 8px;
+}
+
 .game .shellCard {
-  max-width: 1120px;
+  width: min(100%, 1120px);
+  min-height: calc(100dvh - 16px);
+  padding: 12px;
+  border-radius: 22px;
+}
+
+.game .shellHeader {
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.game .shellHeader h1 {
+  font-size: clamp(1.4rem, 6vw, 2.25rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.game .eyebrow,
+.game .subtitle,
+.game .chipStack {
+  display: none;
+}
+
+.game .shellFooter {
+  padding-top: 8px;
+}
+
+@include respond(sm) {
+  .game {
+    padding: clamp(14px, 2vw, 24px);
+  }
+
+  .game .shellCard {
+    min-height: min(780px, calc(100dvh - 32px));
+    padding: clamp(18px, 2.4vw, 30px);
+    border-radius: var(--radius-2xl);
+  }
+
+  .game .shellHeader {
+    padding-bottom: clamp(14px, 2vw, 24px);
+  }
+
+  .game .shellHeader h1 {
+    font-size: clamp(2.25rem, 5vw, 4.1rem);
+  }
+
+  .game .eyebrow {
+    display: block;
+  }
+
+  .game .subtitle {
+    display: block;
+  }
+}
+
+.game .chipStack {
+  @include respond(md) {
+    display: block;
+  }
 }
 
 .heroGlow {
