@@ -147,16 +147,15 @@ export const Game = () => {
   useEffect(() => {
     const onHandEnded = (payload?: { message?: string }) => {
       setActionLocked(false);
-      setCardsShown(false);
       setStatus(payload?.message || "Hand complete");
     };
     const onHandReset = (payload?: { message?: string }) => {
       setActionLocked(false);
-      setCardsShown(false);
       setStatus(payload?.message || "Waiting for new hand");
     };
     const onHandStarted = (payload?: { message?: string }) => {
       setActionLocked(false);
+      setCardsShown(false);
       setStatus(payload?.message || "New hand started");
     };
 
