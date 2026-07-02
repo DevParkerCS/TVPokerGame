@@ -11,6 +11,7 @@ import {
 } from "../Types/Types";
 
 const STARTING_BALANCE = 10000;
+const GAME_ALREADY_STARTED_ERROR = "Game has already started";
 
 function cleanRoomId(roomId: string): string {
   return roomId.trim().toUpperCase();
@@ -45,6 +46,11 @@ export function registerPhone(ns: Namespace) {
         const isReconnect = !!requestedPlayerId && !!game.players[requestedPlayerId];
         const playerId = isReconnect ? requestedPlayerId : socket.id;
         const playerName = payload.name.trim();
+
+        if (game.isStarted && !isReconnect) {
+          ack({ ok: false, error: GAME_ALREADY_STARTED_ERROR });
+          return;
+        }
 
         if (isReconnect) {
           game.players[playerId].socketId = socket.id;
